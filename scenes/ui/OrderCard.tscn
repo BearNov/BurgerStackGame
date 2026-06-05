@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://bh845roof81k3"]
+
+[ext_resource type="Script" uid="uid://dmressykn1fms" path="res://scripts/ui/OrderCard.gd" id="1_hh0f3"]
+
+[node name="OrderCard" type="PanelContainer" unique_id=1673935301]
+custom_minimum_size = Vector2(230, 155)
+offset_right = 220.0
+offset_bottom = 140.0
+script = ExtResource("1_hh0f3")
+
+[node name="ContentMargin" type="MarginContainer" parent="." unique_id=1673573064]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="ContentVBox" type="VBoxContainer" parent="ContentMargin" unique_id=1571394801]
+layout_mode = 2
+
+[node name="CustomerNameLabel" type="Label" parent="ContentMargin/ContentVBox" unique_id=384284206]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Customer A"
+
+[node name="OrderIngredientsLabel" type="Label" parent="ContentMargin/ContentVBox" unique_id=836157568]
+custom_minimum_size = Vector2(180, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Wants:
+Patty
+Cheese
+Lettuce
+Tomato"
+autowrap_mode = 3
+
+[node name="TipLabel" type="Label" parent="ContentMargin/ContentVBox" unique_id=592652441]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Extra layers = bigger tip"

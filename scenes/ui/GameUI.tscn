@@ -1,0 +1,355 @@
+[gd_scene format=3 uid="uid://drq2u5554emab"]
+
+[ext_resource type="Script" uid="uid://bbka2f5016dxb" path="res://scripts/GameUI.gd" id="1_3pxe2"]
+[ext_resource type="Texture2D" uid="uid://10lp0t5c7qr8" path="res://assets/ui/logo.jpeg" id="1_r8hcy"]
+[ext_resource type="PackedScene" uid="uid://boh3k7gpxaaac" path="res://scenes/ui/CustomerSlot.tscn" id="3_jwej7"]
+
+[node name="GameUI" type="CanvasLayer" unique_id=1820061280]
+script = ExtResource("1_3pxe2")
+
+[node name="SplashScreen" type="Control" parent="." unique_id=2088959010]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BG" type="ColorRect" parent="SplashScreen" unique_id=1094033218]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="LogoTexture" type="TextureRect" parent="SplashScreen" unique_id=766803472]
+z_index = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 100.0
+offset_top = 293.62
+offset_right = 520.0
+offset_bottom = 293.62024
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.365, 0.365)
+texture = ExtResource("1_r8hcy")
+expand_mode = 3
+stretch_mode = 5
+
+[node name="MainMenu" type="Control" parent="." unique_id=1859715231]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BG" type="ColorRect" parent="MainMenu" unique_id=1661458274]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="TitleLabel" type="Label" parent="MainMenu" unique_id=269959289]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 190.0
+offset_bottom = 270.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "Burger Stack"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WalletLabel" type="Label" parent="MainMenu" unique_id=1584175736]
+layout_mode = 0
+offset_left = 304.0
+offset_top = 24.0
+offset_right = 516.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 20
+text = "Wallet: $0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="PlayButton" type="Button" parent="MainMenu" unique_id=749693362]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 26
+text = "Restaurant Mode"
+
+[node name="EndlessModeButton" type="Button" parent="MainMenu" unique_id=1590378236]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 500.0
+offset_right = 420.0
+offset_bottom = 556.0
+theme_override_font_sizes/font_size = 26
+text = "Endless Mode"
+
+[node name="MainUpgradeButton" type="Button" parent="MainMenu" unique_id=461131097]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 570.0
+offset_right = 420.0
+offset_bottom = 626.0
+theme_override_font_sizes/font_size = 26
+text = "Upgrade Restaurant"
+
+[node name="GameplayHUD" type="Control" parent="." unique_id=274346319]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScoreLabel" type="Label" parent="GameplayHUD" unique_id=2106543486]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 274.0
+offset_bottom = 64.0
+theme_override_font_sizes/font_size = 28
+text = "Score: 0"
+
+[node name="IngredientLabel" type="Label" parent="GameplayHUD" unique_id=1702911046]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 64.0
+offset_right = 374.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 22
+text = "Ingredient: Cheese"
+
+[node name="StacksLabel" type="Label" parent="GameplayHUD" unique_id=1476344372]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 94.0
+offset_right = 524.0
+offset_bottom = 122.0
+theme_override_font_sizes/font_size = 18
+text = "Stacks: A 0 x0 | B 0 x0 | Best 0"
+
+[node name="InfoLabel" type="Label" parent="GameplayHUD" unique_id=2060526070]
+visible = false
+layout_mode = 0
+offset_left = 24.0
+offset_top = 122.0
+offset_right = 524.0
+offset_bottom = 150.0
+theme_override_font_sizes/font_size = 18
+text = "Tap to drop"
+
+[node name="ResultLabel" type="Label" parent="GameplayHUD" unique_id=2035030084]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 152.0
+offset_right = 524.0
+offset_bottom = 184.0
+theme_override_font_sizes/font_size = 18
+text = "Click to drop. Click again while falling to flip."
+
+[node name="TrashButton" type="Button" parent="GameplayHUD" unique_id=495227190]
+layout_mode = 0
+offset_left = 356.0
+offset_top = 24.0
+offset_right = 516.0
+offset_bottom = 70.0
+text = "Trash "
+
+[node name="ComboPopupLabel" type="Label" parent="GameplayHUD" unique_id=869823329]
+visible = false
+layout_mode = 0
+offset_left = 48.0
+offset_top = 195.0
+offset_right = 492.0
+offset_bottom = 245.0
+theme_override_font_sizes/font_size = 24
+text = "Nice! Stack A x10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ShiftLabel" type="Label" parent="GameplayHUD" unique_id=398030243]
+layout_mode = 0
+offset_left = 356.0
+offset_top = 76.0
+offset_right = 516.0
+offset_bottom = 106.0
+theme_override_font_sizes/font_size = 18
+text = "Shift: 2:00"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="CustomerSlotA" parent="GameplayHUD" unique_id=1363483086 instance=ExtResource("3_jwej7")]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 718.0
+offset_right = 254.0
+offset_bottom = 908.0
+
+[node name="CustomerSlotB" parent="GameplayHUD" unique_id=1695596560 instance=ExtResource("3_jwej7")]
+layout_mode = 0
+offset_left = 286.0
+offset_top = 718.0
+offset_right = 516.0
+offset_bottom = 908.0
+
+[node name="StageGoalLabel" type="Label" parent="GameplayHUD" unique_id=955542461]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 106.0
+offset_right = 516.0
+offset_bottom = 134.0
+theme_override_font_sizes/font_size = 18
+text = "Stage 1 | Customers 0/5"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="GameOverScreen" type="Control" parent="." unique_id=1410236899]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BG" type="ColorRect" parent="GameOverScreen" unique_id=1431691868]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="GameOverLabel" type="Label" parent="GameOverScreen" unique_id=37170262]
+layout_mode = 0
+offset_top = 280.0
+offset_right = 540.0
+offset_bottom = 350.0
+theme_override_font_sizes/font_size = 40
+text = "Shift Complete"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FinalScoreLabel" type="Label" parent="GameOverScreen" unique_id=804456418]
+layout_mode = 0
+offset_left = 60.0
+offset_top = 365.0
+offset_right = 480.0
+offset_bottom = 485.0
+theme_override_font_sizes/font_size = 28
+text = "Final Score: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RestartButton" type="Button" parent="GameOverScreen" unique_id=2085427767]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 510.0
+offset_right = 390.0
+offset_bottom = 558.0
+theme_override_font_sizes/font_size = 28
+text = "Next Stage"
+
+[node name="UpgradeButton" type="Button" parent="GameOverScreen" unique_id=1633214470]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 570.0
+offset_right = 390.0
+offset_bottom = 618.0
+text = "Upgrade Restaurant"
+
+[node name="MainMenuButton" type="Button" parent="GameOverScreen" unique_id=464240878]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 630.0
+offset_right = 390.0
+offset_bottom = 678.0
+text = "Main Menu"
+
+[node name="StageMenu" type="Control" parent="." unique_id=15736410]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BG" type="ColorRect" parent="StageMenu" unique_id=2141881736]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="StageTitleLabel" type="Label" parent="StageMenu" unique_id=103437101]
+layout_mode = 0
+offset_top = 210.0
+offset_right = 540.0
+offset_bottom = 280.0
+theme_override_font_sizes/font_size = 40
+text = "Select Stage"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Stage1Button" type="Button" parent="StageMenu" unique_id=536041205]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 330.0
+offset_right = 390.0
+offset_bottom = 378.0
+text = "Stage 1 - Serve 5"
+
+[node name="Stage2Button" type="Button" parent="StageMenu" unique_id=747487612]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 390.0
+offset_right = 390.0
+offset_bottom = 438.0
+disabled = true
+text = "Stage 2 - Locked"
+
+[node name="Stage3Button" type="Button" parent="StageMenu" unique_id=933052417]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 450.0
+offset_right = 390.0
+offset_bottom = 498.0
+disabled = true
+text = "Stage 3 - Locked"
+
+[node name="StageBackButton" type="Button" parent="StageMenu" unique_id=926869565]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 540.0
+offset_right = 390.0
+offset_bottom = 588.0
+text = "Back"
