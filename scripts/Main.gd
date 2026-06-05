@@ -310,6 +310,9 @@ func start_game() -> void:
 	clear_current_run_objects()
 	assign_customer_orders()
 
+	if ingredient_factory != null and ingredient_factory.has_method("reset_spawn_state"):
+		ingredient_factory.reset_spawn_state()
+
 	game_state = GameState.PLAYING
 
 	run_money = 0
@@ -620,9 +623,36 @@ func trash_current_ingredient() -> void:
 
 	spawn_ingredient()
 
-func spawn_ingredient() -> void:
-	var ingredient_data: Dictionary = ingredient_factory.choose_random_ingredient()
+func get_missing_ingredients_for_active_orders() -> Array[String]:
+	var missing_ingredient_names: Array[String] = []
 
+	for stack_name: String in active_stack_names:
+		var required_order: Array[String] = get_customer_order_for_stack(stack_name)
+		var burger_ingredients: Array[String] = get_stack_ingredients(stack_name)
+		var missing_for_stack: Array[String] = get_missing_ingredients(required_order, burger_ingredients)
+
+		for ingredient_name: String in missing_for_stack:
+			if not missing_ingredient_names.has(ingredient_name):
+				missing_ingredient_names.append(ingredient_name)
+
+	return missing_ingredient_names
+
+func has_any_stack_ready_to_serve() -> bool:
+	for stack_name: String in active_stack_names:
+		if is_stack_order_ready_to_serve(stack_name):
+			return true
+
+	return false
+
+func spawn_ingredient() -> void:
+
+	var missing_ingredient_names: Array[String] = get_missing_ingredients_for_active_orders()
+	var has_ready_order: bool = has_any_stack_ready_to_serve()
+
+	var ingredient_data: Dictionary = ingredient_factory.choose_smart_ingredient(
+		missing_ingredient_names,
+		has_ready_order
+)
 	current_ingredient_name = str(ingredient_data["name"])
 	current_ingredient_width = float(ingredient_data["width"])
 	current_ingredient_height = float(ingredient_data["height"])
@@ -765,7 +795,6 @@ func add_stack_style_bonus(stack_name: String, amount: int) -> void:
 
 func get_stack_style_bonus(stack_name: String) -> int:
 	return int(stack_style_bonuses.get(stack_name, 0))
-
 
 func clear_stack_style_bonus(stack_name: String) -> void:
 	stack_style_bonuses[stack_name] = 0

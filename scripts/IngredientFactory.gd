@@ -2,10 +2,15 @@ class_name IngredientFactory
 extends Node
 
 var normal_ingredients_since_top_bun: int = 0
+var normal_spawns_while_order_ready: int = 0
 
-var top_bun_min_normal_gap: int = 4
-var top_bun_force_normal_gap: int = 8
-var top_bun_chance_after_gap: float = 0.25
+var top_bun_min_normal_gap: int = 5
+var top_bun_chance_when_no_order_ready: float = 0.05
+
+var top_bun_chance_when_order_ready: float = 0.55
+var top_bun_force_after_ready_spawns: int = 2
+
+var missing_ingredient_bias_chance: float = 0.60
 
 var normal_ingredient_names: Array[String] = [
 	"Cheese",
@@ -16,24 +21,87 @@ var normal_ingredient_names: Array[String] = [
 	"Egg"
 ]
 
+var normal_ingredient_bag: Array[String] = []
+
 func choose_random_ingredient() -> Dictionary:
-	var should_spawn_top_bun: bool = false
+	return choose_smart_ingredient([], false)
 
-	if normal_ingredients_since_top_bun >= top_bun_force_normal_gap:
-		should_spawn_top_bun = true
-	elif normal_ingredients_since_top_bun >= top_bun_min_normal_gap:
-		should_spawn_top_bun = randf() < top_bun_chance_after_gap
-
-	if should_spawn_top_bun:
+func choose_smart_ingredient(
+	missing_ingredient_names: Array[String],
+	has_ready_order: bool
+) -> Dictionary:
+	if should_spawn_top_bun(has_ready_order):
 		normal_ingredients_since_top_bun = 0
+		normal_spawns_while_order_ready = 0
 		return get_ingredient_data("Top Bun")
 
-	var random_index: int = randi_range(0, normal_ingredient_names.size() - 1)
-	var ingredient_name: String = normal_ingredient_names[random_index]
+	var ingredient_name: String = choose_normal_ingredient(missing_ingredient_names)
 
 	normal_ingredients_since_top_bun += 1
 
+	if has_ready_order:
+		normal_spawns_while_order_ready += 1
+	else:
+		normal_spawns_while_order_ready = 0
+
 	return get_ingredient_data(ingredient_name)
+
+func should_spawn_top_bun(has_ready_order: bool) -> bool:
+	if has_ready_order:
+		if normal_spawns_while_order_ready >= top_bun_force_after_ready_spawns:
+			return true
+
+		return randf() < top_bun_chance_when_order_ready
+
+	if normal_ingredients_since_top_bun < top_bun_min_normal_gap:
+		return false
+
+	return randf() < top_bun_chance_when_no_order_ready
+
+func choose_normal_ingredient(missing_ingredient_names: Array[String]) -> String:
+	var valid_missing_ingredients: Array[String] = get_valid_missing_ingredients(missing_ingredient_names)
+
+	if valid_missing_ingredients.size() > 0:
+		if randf() < missing_ingredient_bias_chance:
+			var missing_index: int = randi_range(0, valid_missing_ingredients.size() - 1)
+			return valid_missing_ingredients[missing_index]
+
+	return take_ingredient_from_bag()
+
+func get_valid_missing_ingredients(missing_ingredient_names: Array[String]) -> Array[String]:
+	var valid_missing_ingredients: Array[String] = []
+
+	for ingredient_name: String in missing_ingredient_names:
+		if not normal_ingredient_names.has(ingredient_name):
+			continue
+
+		if valid_missing_ingredients.has(ingredient_name):
+			continue
+
+		valid_missing_ingredients.append(ingredient_name)
+
+	return valid_missing_ingredients
+
+func take_ingredient_from_bag() -> String:
+	if normal_ingredient_bag.is_empty():
+		refill_normal_ingredient_bag()
+
+	var ingredient_name: String = normal_ingredient_bag.pop_back()
+
+	if ingredient_name == "":
+		return "Cheese"
+
+	return ingredient_name
+
+func refill_normal_ingredient_bag() -> void:
+	normal_ingredient_bag = normal_ingredient_names.duplicate()
+	normal_ingredient_bag.shuffle()
+
+func reset_spawn_state() -> void:
+	normal_ingredients_since_top_bun = 0
+	normal_spawns_while_order_ready = 0
+	normal_ingredient_bag.clear()
+	refill_normal_ingredient_bag()
 
 func get_ingredient_data(ingredient_name: String) -> Dictionary:
 	var data: Dictionary = {}
