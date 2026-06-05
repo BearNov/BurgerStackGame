@@ -74,3 +74,9 @@ func _process(delta: float) -> void:
 
 	serve_prompt_label.modulate = Color(1, 1, 1, alpha_value)
 	serve_prompt_label.scale = Vector2(scale_value, scale_value)
+
+func get_money_target_global_position() -> Vector2:
+	if order_card != null and order_card.has_method("get_money_target_global_position"):
+		return order_card.get_money_target_global_position()
+
+	return get_global_rect().get_center()

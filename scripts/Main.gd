@@ -787,9 +787,67 @@ func get_combo_bonus_for_stack(stack: BurgerStack) -> int:
 
 	return extra_combo * combo_bonus_per_extra_combo
 
+func show_stack_money_feedback(
+	stack_name: String,
+	popup_text: String,
+	money_delta: int
+) -> void:
+	if game_ui == null:
+		return
+
+	if game_ui.has_method("show_customer_money_feedback"):
+		game_ui.show_customer_money_feedback(stack_name, popup_text, money_delta)
+
+func count_ingredient_in_array(
+	ingredient_names: Array[String],
+	ingredient_name_to_count: String
+) -> int:
+	var count: int = 0
+
+	for ingredient_name: String in ingredient_names:
+		if ingredient_name == ingredient_name_to_count:
+			count += 1
+
+	return count
+
+func is_extra_ingredient_for_stack(stack_name: String, ingredient_name: String) -> bool:
+	var required_order: Array[String] = get_customer_order_for_stack(stack_name)
+	var current_stack_ingredients: Array[String] = get_stack_ingredients(stack_name)
+
+	var required_count: int = count_ingredient_in_array(required_order, ingredient_name)
+	var current_count: int = count_ingredient_in_array(current_stack_ingredients, ingredient_name)
+
+	return current_count >= required_count
+
+func show_extra_layer_feedback_if_needed(stack_name: String, ingredient_name: String) -> void:
+	if not is_extra_ingredient_for_stack(stack_name, ingredient_name):
+		return
+
+	var preference_type: String = get_customer_preference_for_stack(stack_name)
+
+	if preference_type == "exact":
+		show_stack_money_feedback(
+			stack_name,
+			"Extra -$" + str(exact_extra_layer_penalty),
+			-exact_extra_layer_penalty
+		)
+	else:
+		show_stack_money_feedback(
+			stack_name,
+			"Extra +$" + str(tip_per_extra_layer),
+			tip_per_extra_layer
+		)
+
 func add_stack_style_bonus(stack_name: String, amount: int) -> void:
 	var current_bonus: int = int(stack_style_bonuses.get(stack_name, 0))
 	stack_style_bonuses[stack_name] = current_bonus + amount
+
+	if amount > 0:
+		show_stack_money_feedback(
+			stack_name,
+			"Style +$" + str(amount),
+			amount
+		)
 
 	refresh_customer_progress(stack_name)
 
@@ -949,6 +1007,8 @@ func refresh_customer_progress(stack_name: String) -> void:
 func record_stack_ingredient(stack_name: String, ingredient_name: String) -> void:
 	if ingredient_name == "Top Bun":
 		return
+
+	show_extra_layer_feedback_if_needed(stack_name, ingredient_name)
 
 	var target_ingredients: Array = stack_ingredients.get(stack_name, [])
 	target_ingredients.append(ingredient_name)

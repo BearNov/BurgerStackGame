@@ -52,9 +52,13 @@ var combo_popup_duration: float = 2.05
 var combo_popup_first_milestone: int = 10
 var combo_popup_step: int = 10
 var combo_popup_float_distance: float = 18.0
-
 var combo_popup_base_position: Vector2 = Vector2.ZERO
 
+var customer_money_preview_by_stack: Dictionary = {}
+
+var money_popup_items: Array[Dictionary] = []
+var money_popup_duration: float = 0.85
+var money_popup_float_height: float = 48.0
 
 func _ready() -> void:
 	layer = 10
@@ -131,6 +135,9 @@ func setup_customer_orders(
 	preference_a: String = "tip_lover",
 	preference_b: String = "tip_lover"
 ) -> void:
+	customer_money_preview_by_stack.clear()
+	clear_money_popups()
+
 	setup_customer_order_for_stack("A", "Customer A", order_a, preference_a)
 	setup_customer_order_for_stack("B", "Customer B", order_b, preference_b)
 
@@ -184,6 +191,7 @@ func setup() -> void:
 
 func _process(delta: float) -> void:
 	update_combo_popup(delta)
+	update_money_popups(delta)
 
 func _on_trash_pressed() -> void:
 	trash_pressed.emit()
@@ -414,6 +422,228 @@ func update_info(
 	result_label.text = result_text
 	trash_button.disabled = not trash_enabled
 
+func maybe_show_customer_money_change_popup(
+	stack_name: String,
+	payout_preview_text: String
+) -> void:
+	if not gameplay_hud.visible:
+		return
+
+	var new_money_value: int = extract_money_value_from_text(payout_preview_text)
+
+	if not customer_money_preview_by_stack.has(stack_name):
+		customer_money_preview_by_stack[stack_name] = new_money_value
+		return
+
+	var old_money_value: int = int(customer_money_preview_by_stack[stack_name])
+
+	if new_money_value == old_money_value:
+		return
+
+	customer_money_preview_by_stack[stack_name] = new_money_value
+
+	var money_delta: int = new_money_value - old_money_value
+
+	if money_delta == 0:
+		return
+
+	var popup_text: String = get_money_change_popup_text(money_delta)
+	show_customer_money_popup(stack_name, popup_text, money_delta)
+
+func extract_money_value_from_text(text: String) -> int:
+	var dollar_index: int = text.find("$")
+
+	if dollar_index == -1:
+		return 0
+
+	var index: int = dollar_index + 1
+	var digits: String = ""
+
+	while index < text.length():
+		var character: String = text.substr(index, 1)
+
+		if "0123456789".contains(character):
+			digits += character
+		else:
+			break
+
+		index += 1
+
+	if digits == "":
+		return 0
+
+	return int(digits)
+
+func get_money_change_popup_text(money_delta: int) -> String:
+	if money_delta > 0:
+		if result_label != null:
+			var result_lower: String = result_label.text.to_lower()
+
+			if result_lower.contains("style"):
+				return "Style +$" + str(money_delta)
+
+		return "Extra +$" + str(money_delta)
+
+	return "Extra -$" + str(abs(money_delta))
+
+func show_customer_money_feedback(
+	stack_name: String,
+	popup_text: String,
+	money_delta: int
+) -> void:
+	if not gameplay_hud.visible:
+		return
+
+	show_customer_money_popup(stack_name, popup_text, money_delta)
+
+func show_customer_money_popup(
+	stack_name: String,
+	popup_text: String,
+	money_delta: int
+) -> void:
+	
+	var target_position: Vector2 = get_customer_money_target_position(stack_name)
+
+	var active_popup_count: int = get_active_money_popup_count_for_stack(stack_name)
+	var lane_index: int = active_popup_count % 3
+	var lane_offset: Vector2 = Vector2(0.0, -40.0 * float(lane_index))
+
+	var start_position: Vector2 = target_position + Vector2(0.0, -money_popup_float_height) + lane_offset
+	var adjusted_target_position: Vector2 = target_position + lane_offset
+	
+	var popup_label: Label = Label.new()
+	
+	popup_label.text = popup_text
+	popup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	popup_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	popup_label.size = Vector2(135, 30)
+	popup_label.z_index = 40
+	popup_label.add_theme_font_size_override("font_size", 19)
+	popup_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	popup_label.add_theme_constant_override("outline_size", 5)
+
+	if money_delta >= 0:
+		popup_label.add_theme_color_override("font_color", Color(0.65, 1.0, 0.35, 1.0))
+	else:
+		popup_label.add_theme_color_override("font_color", Color(1.0, 0.30, 0.25, 1.0))
+
+	var start_rect_position: Vector2 = clamp_money_popup_position(
+		adjusted_target_position - Vector2(67.5, 15),
+		popup_label.size
+	)
+
+	var target_rect_position: Vector2 = clamp_money_popup_position(
+		target_position - Vector2(67.5, 15),
+		popup_label.size
+	)
+
+	popup_label.position = start_rect_position
+
+	gameplay_hud.add_child(popup_label)
+
+	var popup_item: Dictionary = {
+		"label": popup_label,
+		"timer": money_popup_duration,
+		"start_position": start_rect_position,
+		"target_position": target_rect_position,
+		"stack_name": stack_name
+	}
+
+	money_popup_items.append(popup_item)
+
+func get_customer_money_target_position(stack_name: String) -> Vector2:
+	var slot = get_customer_slot(stack_name)
+
+	if slot != null and slot.has_method("get_money_target_global_position"):
+		return slot.get_money_target_global_position()
+
+	if slot != null:
+		return slot.get_global_rect().get_center()
+
+	return Vector2(270, 820)
+
+func get_active_money_popup_count_for_stack(stack_name: String) -> int:
+	var popup_count: int = 0
+
+	for popup_item: Dictionary in money_popup_items:
+		if not popup_item.has("stack_name"):
+			continue
+
+		if String(popup_item["stack_name"]) == stack_name:
+			popup_count += 1
+
+	return popup_count
+
+func clamp_money_popup_position(raw_position: Vector2, popup_size: Vector2) -> Vector2:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var margin: float = 8.0
+
+	var clamped_x: float = clamp(
+		raw_position.x,
+		margin,
+		viewport_size.x - popup_size.x - margin
+	)
+
+	var clamped_y: float = clamp(
+		raw_position.y,
+		margin,
+		viewport_size.y - popup_size.y - margin
+	)
+
+	return Vector2(clamped_x, clamped_y)
+
+func update_money_popups(delta: float) -> void:
+	for index in range(money_popup_items.size() - 1, -1, -1):
+		var popup_item: Dictionary = money_popup_items[index]
+		var popup_label: Label = popup_item["label"]
+
+		if popup_label == null or not is_instance_valid(popup_label):
+			money_popup_items.remove_at(index)
+			continue
+
+		var timer: float = float(popup_item["timer"])
+		timer -= delta
+		popup_item["timer"] = timer
+		money_popup_items[index] = popup_item
+
+		if timer <= 0.0:
+			popup_label.queue_free()
+			money_popup_items.remove_at(index)
+			continue
+
+		var progress: float = 1.0 - clamp(timer / money_popup_duration, 0.0, 1.0)
+		var start_position: Vector2 = popup_item["start_position"]
+		var target_position: Vector2 = popup_item["target_position"]
+
+		var unclamped_position: Vector2 = start_position.lerp(target_position, progress)
+		popup_label.position = clamp_money_popup_position(unclamped_position, popup_label.size)
+
+		var popup_color: Color = popup_label.modulate
+		popup_color.a = 1.0
+
+		if progress > 0.55:
+			popup_color.a = lerpf(1.0, 0.0, (progress - 0.55) / 0.45)
+
+		popup_label.modulate = popup_color
+
+		var scale_value: float = 1.0
+
+		if progress < 0.18:
+			scale_value = lerpf(0.85, 1.10, progress / 0.18)
+		elif progress < 0.32:
+			scale_value = lerpf(1.10, 1.0, (progress - 0.18) / 0.14)
+
+		popup_label.scale = Vector2(scale_value, scale_value)
+
+func clear_money_popups() -> void:
+	for popup_item: Dictionary in money_popup_items:
+		var popup_label: Label = popup_item["label"]
+
+		if popup_label != null and is_instance_valid(popup_label):
+			popup_label.queue_free()
+
+	money_popup_items.clear()
+
 func show_combo_popup(stack_name: String, combo_count: int) -> void:
 	if combo_count < combo_popup_first_milestone:
 		return
@@ -429,7 +659,6 @@ func show_combo_popup(stack_name: String, combo_count: int) -> void:
 	combo_popup_label.pivot_offset = combo_popup_label.size / 2.0
 
 	combo_popup_timer = combo_popup_duration
-
 
 func update_combo_popup(delta: float) -> void:
 	if not combo_popup_label.visible:
@@ -479,7 +708,6 @@ func update_combo_popup(delta: float) -> void:
 
 	combo_popup_label.position = combo_popup_base_position + Vector2(0.0, float_offset)
 
-
 func get_combo_milestone_message(stack_name: String, combo_count: int) -> String:
 	var messages: Array[String] = [
 		"Nice! Stack %s x%d",
@@ -497,7 +725,6 @@ func get_combo_milestone_message(stack_name: String, combo_count: int) -> String
 	var message_index: int = milestone_index % messages.size()
 
 	return messages[message_index] % [stack_name, combo_count]
-
 
 func is_pointer_over_ui(pointer_position: Vector2) -> bool:
 	if splash_screen.visible:

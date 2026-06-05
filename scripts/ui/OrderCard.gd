@@ -395,3 +395,9 @@ func get_text_color_for_ingredient(ingredient_name: String) -> Color:
 		return Color(0.22, 0.14, 0.00, 1.0)
 
 	return Color.WHITE
+
+func get_money_target_global_position() -> Vector2:
+	if money_panel != null:
+		return money_panel.get_global_rect().get_center()
+
+	return get_global_rect().get_center()
