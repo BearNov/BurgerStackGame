@@ -1,6 +1,8 @@
 class_name GameUI
 extends CanvasLayer
 
+const TRASH_ICON: Texture2D = preload("res://assets/ui/icons/trash_icon.png")
+
 signal trash_pressed
 signal play_pressed
 signal restart_pressed
@@ -72,8 +74,18 @@ func _ready() -> void:
 	result_label.custom_minimum_size = Vector2(300, 48)
 	result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
-	trash_button.position = Vector2(356, 24)
-	
+	trash_button.text = ""
+	trash_button.icon = TRASH_ICON
+	trash_button.expand_icon = true
+
+	trash_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	trash_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	trash_button.position = Vector2(10, 900)
+	trash_button.size = Vector2(80, 52)
+	trash_button.custom_minimum_size = Vector2(80, 52)
+	trash_button.z_index = 20
+
 	stage_goal_label.position = Vector2(300, 106)
 	stage_goal_label.size = Vector2(216, 28)
 	stage_goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

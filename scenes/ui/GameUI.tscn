@@ -206,17 +206,17 @@ vertical_alignment = 1
 
 [node name="CustomerSlotA" parent="GameplayHUD" unique_id=1363483086 instance=ExtResource("3_jwej7")]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 718.0
-offset_right = 254.0
-offset_bottom = 908.0
+offset_left = 12.0
+offset_top = 780.0
+offset_right = 262.0
+offset_bottom = 850.0
 
 [node name="CustomerSlotB" parent="GameplayHUD" unique_id=1695596560 instance=ExtResource("3_jwej7")]
 layout_mode = 0
-offset_left = 286.0
-offset_top = 718.0
-offset_right = 516.0
-offset_bottom = 908.0
+offset_left = 278.0
+offset_top = 780.0
+offset_right = 528.0
+offset_bottom = 850.0
 
 [node name="StageGoalLabel" type="Label" parent="GameplayHUD" unique_id=955542461]
 layout_mode = 0
