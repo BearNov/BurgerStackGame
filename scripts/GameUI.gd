@@ -9,6 +9,10 @@ signal restart_pressed
 signal main_menu_pressed
 signal upgrade_pressed
 signal stage_selected(stage_number: int)
+signal pause_pressed
+signal resume_pressed
+signal reset_stage_pressed
+
 
 @onready var splash_screen: Control = $SplashScreen
 @onready var main_menu: Control = $MainMenu
@@ -32,6 +36,12 @@ signal stage_selected(stage_number: int)
 @onready var trash_button: Button = $GameplayHUD/TrashButton
 @onready var shift_label: Label = $GameplayHUD/ShiftLabel
 @onready var stage_goal_label: Label = $GameplayHUD/StageGoalLabel
+@onready var pause_button: Button = $GameplayHUD/PauseButton
+
+@onready var pause_menu: Control = $PauseMenu
+@onready var resume_button: Button = $PauseMenu/ResumeButton
+@onready var reset_stage_button: Button = $PauseMenu/ResetStageButton
+@onready var pause_main_menu_button: Button = $PauseMenu/PauseMainMenuButton
 
 @onready var play_button: Button = $MainMenu/PlayButton
 @onready var wallet_label: Label = $MainMenu/WalletLabel
@@ -60,8 +70,30 @@ var money_popup_items: Array[Dictionary] = []
 var money_popup_duration: float = 0.85
 var money_popup_float_height: float = 48.0
 
+func setup_mouse_filter_defaults() -> void:
+	if gameplay_hud != null:
+		gameplay_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if main_menu != null:
+		main_menu.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if stage_menu != null:
+		stage_menu.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if game_over_screen != null:
+		game_over_screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if pause_menu != null:
+		pause_menu.mouse_filter = Control.MOUSE_FILTER_STOP
+
 func _ready() -> void:
 	layer = 10
+	
+	setup_gameplay_input_blockers()
+	setup_mouse_filter_defaults()
+	
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	pause_menu.process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	score_label.position = Vector2(24, 28)
 	score_label.size = Vector2(390, 66)
@@ -113,6 +145,17 @@ func _ready() -> void:
 	restart_button.pressed.connect(_on_restart_pressed)
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
 	main_menu_button.pressed.connect(_on_main_menu_pressed)
+
+	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	resume_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	reset_stage_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_main_menu_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_menu.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	pause_button.pressed.connect(_on_pause_pressed)
+	resume_button.pressed.connect(_on_resume_pressed)
+	reset_stage_button.pressed.connect(_on_reset_stage_pressed)
+	pause_main_menu_button.pressed.connect(_on_pause_main_menu_pressed)
 
 	stage_1_button.pressed.connect(_on_stage_1_pressed)
 	stage_2_button.pressed.connect(_on_stage_2_pressed)
@@ -186,6 +229,38 @@ func get_customer_slot(stack_name: String):
 
 	return null
 
+func setup_gameplay_input_blockers() -> void:
+	var blocker_controls: Array[Control] = [
+		trash_button,
+		pause_button,
+		play_button,
+		restart_button,
+		upgrade_button,
+		main_menu_button,
+		stage_1_button,
+		stage_2_button,
+		stage_3_button,
+		stage_back_button,
+		resume_button,
+		reset_stage_button,
+		pause_main_menu_button
+	]
+
+	if main_upgrade_button != null:
+		blocker_controls.append(main_upgrade_button)
+
+	if endless_mode_button != null:
+		blocker_controls.append(endless_mode_button)
+
+	for control: Control in blocker_controls:
+		if control == null:
+			continue
+
+		if not control.is_in_group("blocks_gameplay_input"):
+			control.add_to_group("blocks_gameplay_input")
+
+		control.mouse_filter = Control.MOUSE_FILTER_STOP
+
 func setup() -> void:
 	show_splash_screen()
 
@@ -206,6 +281,21 @@ func _on_upgrade_pressed() -> void:
 	upgrade_pressed.emit()
 
 func _on_main_menu_pressed() -> void:
+	main_menu_pressed.emit()
+
+func _on_pause_pressed() -> void:
+	pause_pressed.emit()
+
+
+func _on_resume_pressed() -> void:
+	resume_pressed.emit()
+
+
+func _on_reset_stage_pressed() -> void:
+	reset_stage_pressed.emit()
+
+
+func _on_pause_main_menu_pressed() -> void:
 	main_menu_pressed.emit()
 
 func _on_stage_1_pressed() -> void:
@@ -238,6 +328,7 @@ func show_main_menu() -> void:
 	gameplay_hud.visible = false
 	game_over_screen.visible = false
 	stage_menu.visible = false
+	pause_menu.visible = false
 
 func update_stage_buttons(
 	unlocked_stage: int,
@@ -268,6 +359,7 @@ func show_stage_menu() -> void:
 	gameplay_hud.visible = false
 	game_over_screen.visible = false
 	stage_menu.visible = true
+	pause_menu.visible = false
 
 func update_wallet_money(wallet_money: int) -> void:
 	if wallet_label != null:
@@ -310,6 +402,15 @@ func show_gameplay_hud() -> void:
 	gameplay_hud.visible = true
 	game_over_screen.visible = false
 	stage_menu.visible = false
+	pause_menu.visible = false
+
+func show_pause_menu() -> void:
+	pause_menu.visible = true
+	pause_menu.move_to_front()
+
+
+func hide_pause_menu() -> void:
+	pause_menu.visible = false
 
 func show_game_over(final_score: int) -> void:
 	splash_screen.visible = false
@@ -326,13 +427,15 @@ func show_shift_summary(
 	stage_number: int = 1,
 	customers_served: int = 0,
 	customers_required: int = 0,
-	stage_cleared: bool = false
+	stage_cleared: bool = false,
+	has_next_stage: bool = true
 ) -> void:
 	splash_screen.visible = false
 	main_menu.visible = false
 	gameplay_hud.visible = false
 	game_over_screen.visible = true
 	stage_menu.visible = false
+	pause_menu.visible = false
 
 	game_over_label.position = Vector2(0, 250)
 	game_over_label.size = Vector2(540, 70)
@@ -348,7 +451,11 @@ func show_shift_summary(
 
 	if stage_cleared:
 		game_over_label.text = "Stage Clear!"
-		restart_button.text = "Next Stage"
+
+		if has_next_stage:
+			restart_button.text = "Next Stage"
+		else:
+			restart_button.text = "Stage Select"
 	else:
 		game_over_label.text = "Shift Over"
 		restart_button.text = "Retry Stage"
@@ -372,6 +479,7 @@ func show_upgrade_placeholder(wallet_money: int) -> void:
 	gameplay_hud.visible = false
 	game_over_screen.visible = true
 	stage_menu.visible = false
+	pause_menu.visible = false
 
 	game_over_label.text = "Upgrades"
 
@@ -392,6 +500,7 @@ func show_endless_placeholder() -> void:
 	gameplay_hud.visible = false
 	game_over_screen.visible = true
 	stage_menu.visible = false
+	pause_menu.visible = false
 
 	game_over_label.text = "Endless Mode"
 	final_score_label.text = "Endless stacking mode coming soon."
@@ -726,17 +835,20 @@ func get_combo_milestone_message(stack_name: String, combo_count: int) -> String
 
 	return messages[message_index] % [stack_name, combo_count]
 
-func is_pointer_over_ui(pointer_position: Vector2) -> bool:
-	if splash_screen.visible:
+func is_pointer_over_ui(screen_position: Vector2) -> bool:
+	if pause_menu != null and pause_menu.is_visible_in_tree():
 		return true
 
-	if main_menu.visible:
-		return true
+	for node: Node in get_tree().get_nodes_in_group("blocks_gameplay_input"):
+		var control: Control = node as Control
 
-	if game_over_screen.visible:
-		return true
+		if control == null:
+			continue
 
-	if trash_button.visible and trash_button.get_global_rect().has_point(pointer_position):
-		return true
+		if not control.is_visible_in_tree():
+			continue
+
+		if control.get_global_rect().has_point(screen_position):
+			return true
 
 	return false

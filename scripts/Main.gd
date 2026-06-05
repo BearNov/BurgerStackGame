@@ -44,6 +44,9 @@ var shift_time_remaining: float = 240.0
 var shift_timer_running: bool = false
 var shift_has_ended: bool = false
 
+var is_game_paused: bool = false
+var gameplay_input_block_until_msec: int = 0
+
 var current_stage: int = 1
 var unlocked_stage: int = 1
 var max_selectable_stage: int = 3
@@ -180,6 +183,9 @@ func _ready() -> void:
 	game_ui.restart_pressed.connect(Callable(self, "start_next_stage"))
 	game_ui.main_menu_pressed.connect(Callable(self, "return_to_main_menu"))
 	game_ui.upgrade_pressed.connect(Callable(self, "show_upgrade_placeholder"))
+	game_ui.pause_pressed.connect(Callable(self, "pause_game"))
+	game_ui.resume_pressed.connect(Callable(self, "resume_game"))
+	game_ui.reset_stage_pressed.connect(Callable(self, "reset_current_stage"))
 	
 	setup_empty_stack_state()
 	assign_customer_orders()
@@ -277,7 +283,60 @@ func setup_stage_goal(stage_number: int) -> void:
 	customers_served_this_stage = 0
 	stage_was_cleared = false
 
+func block_gameplay_input_for(milliseconds: int) -> void:
+	gameplay_input_block_until_msec = Time.get_ticks_msec() + milliseconds
+
+
+func is_gameplay_input_blocked() -> bool:
+	return Time.get_ticks_msec() < gameplay_input_block_until_msec
+
+func pause_game() -> void:
+	if game_state != GameState.PLAYING:
+		return
+
+	if is_game_paused:
+		return
+
+	block_gameplay_input_for(400)
+
+	is_game_paused = true
+	get_tree().paused = true
+
+	if game_ui != null:
+		game_ui.show_pause_menu()
+
+
+func resume_game() -> void:
+	if not is_game_paused:
+		return
+
+	block_gameplay_input_for(400)
+
+	is_game_paused = false
+	get_tree().paused = false
+
+	if game_ui != null:
+		game_ui.hide_pause_menu()
+
+
+func reset_current_stage() -> void:
+	block_gameplay_input_for(400)
+	
+	is_game_paused = false
+	get_tree().paused = false
+
+	if game_ui != null:
+		game_ui.hide_pause_menu()
+
+	start_stage(current_stage)
+
 func start_stage(stage_number: int) -> void:
+	is_game_paused = false
+	get_tree().paused = false
+
+	if game_ui != null and game_ui.has_method("hide_pause_menu"):
+		game_ui.hide_pause_menu()
+		
 	if stage_number > unlocked_stage:
 		last_result = "Stage " + str(stage_number) + " is locked"
 		return
@@ -365,13 +424,43 @@ func clear_current_run_objects() -> void:
 	best_stack_height = 0
 	hide_all_serve_prompts()
 
+func has_next_stage_after_current() -> bool:
+	return current_stage < max_selectable_stage
+
 func start_next_stage() -> void:
-	if stage_was_cleared and current_stage < max_selectable_stage:
-		start_stage(current_stage + 1)
+	if stage_was_cleared:
+		if has_next_stage_after_current():
+			start_stage(current_stage + 1)
+		else:
+			return_to_stage_select()
 	else:
 		start_stage(current_stage)
 
+func return_to_stage_select() -> void:
+	clear_current_run_objects()
+
+	run_money = 0
+	shift_time_remaining = shift_duration_seconds
+	shift_timer_running = false
+	shift_has_ended = false
+	game_state = GameState.MENU
+	last_result = "Select a stage"
+
+	if game_ui != null:
+		game_ui.update_wallet_money(wallet_money)
+		update_stage_select_ui()
+		hide_all_serve_prompts()
+
+		if game_ui.has_method("show_stage_menu"):
+			game_ui.show_stage_menu()
+
 func return_to_main_menu() -> void:
+	is_game_paused = false
+	get_tree().paused = false
+
+	if game_ui != null and game_ui.has_method("hide_pause_menu"):
+		game_ui.hide_pause_menu()
+		
 	clear_current_run_objects()
 
 	run_money = 0
@@ -431,7 +520,8 @@ func end_shift(stage_cleared: bool = false) -> void:
 			current_stage,
 			customers_served_this_stage,
 			customers_required_this_stage,
-			stage_was_cleared
+			stage_was_cleared,
+			has_next_stage_after_current()
 		)
 
 func create_static_scene_objects() -> void:
@@ -544,6 +634,12 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if game_state != GameState.PLAYING:
+		return
+
+	if is_game_paused:
+		return
+
+	if is_gameplay_input_blocked():
 		return
 
 	if event is InputEventMouseButton:
