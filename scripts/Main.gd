@@ -611,7 +611,7 @@ func trash_current_ingredient() -> void:
 	active_ingredient.queue_free()
 	active_ingredient = null
 	
-	last_result = trashed_name + " trashed (-" + str(trash_penalty) + ")"
+	last_result = trashed_name + " trashed"
 	
 	can_drop = true
 	flip_available = false
