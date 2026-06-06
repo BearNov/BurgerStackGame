@@ -43,6 +43,8 @@ var stack_style_bonuses: Dictionary = {}
 
 var game_state: GameState = GameState.SPLASH
 var current_game_mode: GameMode = GameMode.RESTAURANT
+var endless_current_layers: int = 0
+var endless_best_layers: int = 0
 var splash_timer: float = 0.0
 var splash_duration: float = 1.8
 
@@ -84,6 +86,12 @@ var flip_strength: float = 8.0
 
 var plate_a_x: float = -1.15
 var plate_b_x: float = 1.15
+var endless_plate_x: float = 0.0
+
+var plate_a_body: StaticBody3D = null
+var plate_b_body: StaticBody3D = null
+var bottom_bun_a_body: StaticBody3D = null
+var bottom_bun_b_body: StaticBody3D = null
 
 var current_ingredient_name: String = "Cheese"
 var current_ingredient_width: float = 0.85
@@ -346,7 +354,6 @@ func setup_stage_goal(stage_number: int) -> void:
 func block_gameplay_input_for(milliseconds: int) -> void:
 	gameplay_input_block_until_msec = Time.get_ticks_msec() + milliseconds
 
-
 func is_gameplay_input_blocked() -> bool:
 	return Time.get_ticks_msec() < gameplay_input_block_until_msec
 
@@ -365,7 +372,6 @@ func pause_game() -> void:
 	if game_ui != null:
 		game_ui.show_pause_menu()
 
-
 func resume_game() -> void:
 	if not is_game_paused:
 		return
@@ -378,21 +384,51 @@ func resume_game() -> void:
 	if game_ui != null:
 		game_ui.hide_pause_menu()
 
-
 func reset_current_stage() -> void:
-	block_gameplay_input_for(400)
-	
 	is_game_paused = false
 	get_tree().paused = false
+	block_gameplay_input_for(400)
 
-	if game_ui != null:
-		game_ui.hide_pause_menu()
+	if current_game_mode == GameMode.ENDLESS:
+		reset_endless_run()
+	else:
+		reset_restaurant_stage()
 
+func reset_restaurant_stage() -> void:
 	start_stage(current_stage)
+
+func reset_endless_run() -> void:
+	start_endless_mode()
 
 func start_endless_mode() -> void:
 	current_game_mode = GameMode.ENDLESS
-	last_result = "Endless Mode coming soon"
+	game_state = GameState.PLAYING
+	is_game_paused = false
+	get_tree().paused = false
+	
+	setup_endless_layout()
+
+	clear_current_run_objects()
+
+	run_money = 0
+	endless_current_layers = 0
+	best_stack_height = 0
+
+	shift_timer_running = false
+	shift_has_ended = false
+	shift_time_remaining = shift_duration_seconds
+
+	last_result = "Endless Mode: stack as high as you can"
+
+	setup_empty_stack_state()
+	reset_ability_charges()
+
+	if game_ui != null:
+		game_ui.hide_pause_menu()
+		game_ui.show_gameplay_hud()
+		game_ui.update_endless_goal(endless_current_layers, endless_best_layers)
+
+	spawn_ingredient()
 	update_ui()
 
 func start_restaurant_mode(stage_number: int) -> void:
@@ -401,9 +437,11 @@ func start_restaurant_mode(stage_number: int) -> void:
 
 func start_stage(stage_number: int) -> void:
 	current_game_mode = GameMode.RESTAURANT
+	setup_restaurant_layout()
+
 	is_game_paused = false
 	get_tree().paused = false
-
+	
 	if game_ui != null and game_ui.has_method("hide_pause_menu"):
 		game_ui.hide_pause_menu()
 		
@@ -599,7 +637,6 @@ func end_shift(stage_cleared: bool = false) -> void:
 			has_next_stage_after_current()
 		)
 
-
 func create_static_scene_objects() -> void:
 	ingredient_factory.create_static_box(
 		self,
@@ -609,7 +646,7 @@ func create_static_scene_objects() -> void:
 		Color(0.55, 0.35, 0.20)
 	)
 
-	ingredient_factory.create_static_box(
+	plate_a_body = ingredient_factory.create_static_box(
 		self,
 		"Plate A",
 		Vector3(plate_a_x, 0.22, 0),
@@ -617,7 +654,7 @@ func create_static_scene_objects() -> void:
 		Color(0.85, 0.85, 0.85)
 	)
 
-	ingredient_factory.create_static_box(
+	plate_b_body = ingredient_factory.create_static_box(
 		self,
 		"Plate B",
 		Vector3(plate_b_x, 0.22, 0),
@@ -625,7 +662,7 @@ func create_static_scene_objects() -> void:
 		Color(0.85, 0.85, 0.85)
 	)
 
-	var bottom_bun_a: StaticBody3D = ingredient_factory.create_static_box(
+	bottom_bun_a_body = ingredient_factory.create_static_box(
 		self,
 		"Bottom Bun A",
 		Vector3(plate_a_x, bottom_bun_y, 0),
@@ -633,7 +670,7 @@ func create_static_scene_objects() -> void:
 		Color(0.95, 0.58, 0.22)
 	)
 
-	var bottom_bun_b: StaticBody3D = ingredient_factory.create_static_box(
+	bottom_bun_b_body = ingredient_factory.create_static_box(
 		self,
 		"Bottom Bun B",
 		Vector3(plate_b_x, bottom_bun_y, 0),
@@ -641,8 +678,8 @@ func create_static_scene_objects() -> void:
 		Color(0.95, 0.58, 0.22)
 	)
 
-	create_burger_stack("A", plate_a_x, bottom_bun_a)
-	create_burger_stack("B", plate_b_x, bottom_bun_b)
+	create_burger_stack("A", plate_a_x, bottom_bun_a_body)
+	create_burger_stack("B", plate_b_x, bottom_bun_b_body)
 
 func create_burger_stack(stack_name: String, plate_x: float, bottom_layer: Node3D) -> void:
 	var burger_stack: BurgerStack = BurgerStackScript.new()
@@ -658,6 +695,109 @@ func create_burger_stack(stack_name: String, plate_x: float, bottom_layer: Node3
 	)
 
 	burger_stacks.append(burger_stack)
+
+func get_burger_stack_by_name(stack_name: String) -> BurgerStack:
+	for stack: BurgerStack in burger_stacks:
+		if stack == null:
+			continue
+
+		if not is_instance_valid(stack):
+			continue
+
+		if stack.get_stack_name() == stack_name:
+			return stack
+
+	return null
+
+func set_static_body_collision_enabled(body: Node3D, enabled: bool) -> void:
+	if body == null:
+		return
+
+	if not is_instance_valid(body):
+		return
+
+	if body is CollisionObject3D:
+		var collision_body: CollisionObject3D = body as CollisionObject3D
+
+		if enabled:
+			collision_body.collision_layer = 1
+			collision_body.collision_mask = 1
+		else:
+			collision_body.collision_layer = 0
+			collision_body.collision_mask = 0
+
+	for child: Node in body.get_children():
+		var collision_shape: CollisionShape3D = child as CollisionShape3D
+
+		if collision_shape != null:
+			collision_shape.disabled = not enabled
+
+func setup_restaurant_layout() -> void:
+	active_stack_names = ["A", "B"]
+
+	if plate_a_body != null and is_instance_valid(plate_a_body):
+		plate_a_body.visible = true
+		plate_a_body.position.x = plate_a_x
+		set_static_body_collision_enabled(plate_a_body, true)
+
+	if plate_b_body != null and is_instance_valid(plate_b_body):
+		plate_b_body.visible = true
+		plate_b_body.position.x = plate_b_x
+		set_static_body_collision_enabled(plate_b_body, true)
+
+	if bottom_bun_a_body != null and is_instance_valid(bottom_bun_a_body):
+		bottom_bun_a_body.visible = true
+		bottom_bun_a_body.position.x = plate_a_x
+		set_static_body_collision_enabled(bottom_bun_a_body, true)
+
+	if bottom_bun_b_body != null and is_instance_valid(bottom_bun_b_body):
+		bottom_bun_b_body.visible = true
+		bottom_bun_b_body.position.x = plate_b_x
+		set_static_body_collision_enabled(bottom_bun_b_body, true)
+
+	var stack_a: BurgerStack = get_burger_stack_by_name("A")
+	if stack_a != null:
+		stack_a.plate_x = plate_a_x
+
+	var stack_b: BurgerStack = get_burger_stack_by_name("B")
+	if stack_b != null:
+		stack_b.plate_x = plate_b_x
+
+	if game_ui != null:
+		game_ui.set_endless_hud_mode(false)
+
+func setup_endless_layout() -> void:
+	active_stack_names = ["A"]
+
+	if plate_a_body != null and is_instance_valid(plate_a_body):
+		plate_a_body.visible = true
+		plate_a_body.position.x = endless_plate_x
+		set_static_body_collision_enabled(plate_a_body, true)
+
+	if bottom_bun_a_body != null and is_instance_valid(bottom_bun_a_body):
+		bottom_bun_a_body.visible = true
+		bottom_bun_a_body.position.x = endless_plate_x
+		set_static_body_collision_enabled(bottom_bun_a_body, true)
+
+	if plate_b_body != null and is_instance_valid(plate_b_body):
+		plate_b_body.visible = false
+		set_static_body_collision_enabled(plate_b_body, false)
+
+	if bottom_bun_b_body != null and is_instance_valid(bottom_bun_b_body):
+		bottom_bun_b_body.visible = false
+		set_static_body_collision_enabled(bottom_bun_b_body, false)
+
+	var stack_a: BurgerStack = get_burger_stack_by_name("A")
+	if stack_a != null:
+		stack_a.plate_x = endless_plate_x
+
+	var stack_b: BurgerStack = get_burger_stack_by_name("B")
+	if stack_b != null:
+		stack_b.clear_ingredient_layers()
+		stack_b.reset_combo()
+
+	if game_ui != null:
+		game_ui.set_endless_hud_mode(true)
 
 func _process(delta: float) -> void:
 	if game_state == GameState.SPLASH:
@@ -887,14 +1027,17 @@ func has_any_stack_ready_to_serve() -> bool:
 	return false
 
 func spawn_ingredient() -> void:
-
-	var missing_ingredient_names: Array[String] = get_missing_ingredients_for_active_orders()
-	var has_ready_order: bool = has_any_stack_ready_to_serve()
+	var missing_ingredient_names: Array[String] = []
+	var has_ready_order: bool = false
+	
+	if current_game_mode == GameMode.RESTAURANT:
+		missing_ingredient_names = get_missing_ingredients_for_active_orders()
+		has_ready_order = has_any_stack_ready_to_serve()
 
 	var ingredient_data: Dictionary = ingredient_factory.choose_smart_ingredient(
 		missing_ingredient_names,
 		has_ready_order
-)
+	)
 	current_ingredient_name = str(ingredient_data["name"])
 	current_ingredient_width = float(ingredient_data["width"])
 	current_ingredient_height = float(ingredient_data["height"])
@@ -920,6 +1063,86 @@ func spawn_ingredient() -> void:
 	landing_elapsed = 0.0
 
 func evaluate_landing(body: RigidBody3D) -> void:
+	if current_game_mode == GameMode.ENDLESS:
+		evaluate_endless_landing(body)
+	else:
+		evaluate_restaurant_landing(body)
+
+func evaluate_endless_landing(body: RigidBody3D) -> void:
+	if body == null:
+		return
+
+	var final_x: float = body.position.x
+	var body_width: float = get_body_projected_width(body)
+
+	var target_stack: BurgerStack = get_target_stack(final_x, body_width)
+
+	if target_stack == null:
+		var missed_name: String = str(body.get_meta("ingredient_name"))
+		last_result = missed_name + " missed the stack"
+		add_loose_ingredient(body)
+		active_ingredient = null
+		update_endless_layer_score()
+		return
+
+	var support_ratio: float = target_stack.get_support_ratio(final_x, body_width)
+	var ingredient_name: String = str(body.get_meta("ingredient_name"))
+
+	if support_ratio >= 0.45:
+		target_stack.add_layer(body)
+		target_stack.increase_combo()
+
+		update_endless_layer_score()
+
+		last_result = "Layer " + str(endless_current_layers)
+
+		if endless_current_layers >= endless_best_layers:
+			last_result += " | New Best!"
+
+	elif support_ratio >= 0.25:
+		target_stack.add_layer(body)
+
+		update_endless_layer_score()
+
+		last_result = "Edge layer " + str(endless_current_layers)
+
+		if endless_current_layers >= endless_best_layers:
+			last_result += " | New Best!"
+
+	else:
+		target_stack.reset_combo()
+		last_result = "Bad landing - keep the tower centered"
+		add_loose_ingredient(body)
+
+	active_ingredient = null
+
+func update_endless_layer_score() -> void:
+	var highest_layer_count: int = 0
+
+	for stack: BurgerStack in burger_stacks:
+		if stack == null:
+			continue
+
+		if not is_instance_valid(stack):
+			continue
+		
+		if not active_stack_names.has(stack.get_stack_name()):
+			continue
+		
+		var layer_count: int = stack.get_ingredient_layer_count()
+
+		if layer_count > highest_layer_count:
+			highest_layer_count = layer_count
+
+	endless_current_layers = highest_layer_count
+
+	if endless_current_layers > endless_best_layers:
+		endless_best_layers = endless_current_layers
+
+	if game_ui != null:
+		game_ui.update_endless_goal(endless_current_layers, endless_best_layers)
+
+func evaluate_restaurant_landing(body: RigidBody3D) -> void:
 	if body == null:
 		return
 
@@ -1433,7 +1656,10 @@ func get_target_stack(x: float, body_width: float) -> BurgerStack:
 
 		if not is_instance_valid(stack):
 			continue
-
+		
+		if not active_stack_names.has(stack.get_stack_name()):
+			continue
+		
 		var support_ratio: float = stack.get_support_ratio(x, body_width)
 
 		if support_ratio > best_support_ratio:
@@ -1512,9 +1738,11 @@ func check_detached_stack_layers(delta: float) -> void:
 			continue
 
 		stack.reset_combo()
-
+		
 		var penalty: int = detached_layers.size() * fallen_layer_penalty
-		change_run_money(-penalty)
+
+		if current_game_mode != GameMode.ENDLESS:
+			change_run_money(-penalty)
 
 		for detached_layer: Node3D in detached_layers:
 			if detached_layer != null and is_instance_valid(detached_layer):
@@ -1525,10 +1753,18 @@ func check_detached_stack_layers(delta: float) -> void:
 				add_loose_ingredient(detached_layer)
 			
 
-		if detached_layers.size() == 1:
-			last_result = "A stacked ingredient fell from " + stack.get_stack_name() + " -" + str(penalty)
+		if current_game_mode == GameMode.ENDLESS:
+			if detached_layers.size() == 1:
+				last_result = "A layer fell from the tower"
+			else:
+				last_result = str(detached_layers.size()) + " layers fell from the tower"
+
+			update_endless_layer_score()
 		else:
-			last_result = str(detached_layers.size()) + " ingredients fell from " + stack.get_stack_name() + " -" + str(penalty)
+			if detached_layers.size() == 1:
+				last_result = "A stacked ingredient fell from " + stack.get_stack_name() + " -" + str(penalty)
+			else:
+				last_result = str(detached_layers.size()) + " ingredients fell from " + stack.get_stack_name() + " -" + str(penalty)
 
 func is_body_settled(body: RigidBody3D) -> bool:
 	if body == null:
@@ -1559,20 +1795,29 @@ func update_ui() -> void:
 		return
 
 	game_ui.update_wallet_money(wallet_money)
-	game_ui.update_shift_time(shift_time_remaining)
-	game_ui.update_stage_goal(
-		current_stage,
-		customers_served_this_stage,
-		customers_required_this_stage
-	)
+	
+	if current_game_mode != GameMode.ENDLESS:
+		game_ui.update_shift_time(shift_time_remaining)	
+		
+	if current_game_mode == GameMode.ENDLESS:
+		game_ui.update_endless_goal(endless_current_layers, endless_best_layers)
+	else:
+		game_ui.update_stage_goal(
+			current_stage,
+			customers_served_this_stage,
+			customers_required_this_stage
+		)
 
 	var trash_enabled: bool = active_ingredient != null and can_drop
 
-	game_ui.update_info(
-		run_money,
-		wallet_money,
-		current_ingredient_name,
-		get_stack_summary_text(),
-		last_result,
-		trash_enabled
-	)
+	if current_game_mode == GameMode.ENDLESS:
+		game_ui.update_endless_result(last_result)
+	else:
+		game_ui.update_info(
+			run_money,
+			wallet_money,
+			current_ingredient_name,
+			get_stack_summary_text(),
+			last_result,
+			trash_enabled
+		)

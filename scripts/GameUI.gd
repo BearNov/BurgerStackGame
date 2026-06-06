@@ -51,6 +51,7 @@ signal endless_mode_pressed
 @onready var result_label: Label = $GameplayHUD/ResultLabel
 @onready var combo_popup_label: Label = $GameplayHUD/ComboPopupLabel
 
+@onready var bottom_action_bar: PanelContainer = $GameplayHUD/BottomActionBar
 @onready var trash_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/TrashButton
 @onready var rush_hour_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/RushHourButton
 @onready var tip_boost_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/TipBoostButton
@@ -61,6 +62,13 @@ signal endless_mode_pressed
 
 @onready var shift_label: Label = $GameplayHUD/ShiftLabel
 @onready var stage_goal_label: Label = $GameplayHUD/StageGoalLabel
+
+@onready var endless_hud: Control = $GameplayHUD/EndlessHUD
+@onready var endless_stats_label: Label = $GameplayHUD/EndlessHUD/EndlessStatsLabel
+@onready var endless_hint_label: Label = $GameplayHUD/EndlessHUD/EndlessHintLabel
+@onready var endless_result_label: Label = $GameplayHUD/EndlessHUD/EndlessResultLabel
+
+
 @onready var pause_button: Button = $GameplayHUD/PauseButton
 
 @onready var pause_menu: Control = $PauseMenu
@@ -379,7 +387,6 @@ func _on_trash_pressed() -> void:
 func _on_rush_hour_pressed() -> void:
 	show_gameplay_message("Rush Hour coming soon")
 
-
 func _on_tip_boost_pressed() -> void:
 	show_gameplay_message("Tip Boost coming soon")
 
@@ -404,22 +411,17 @@ func _on_main_menu_pressed() -> void:
 func _on_upgrade_back_pressed() -> void:
 	upgrade_menu_back_pressed.emit()
 
-
 func _on_buy_add_time_charge_upgrade_pressed() -> void:
 	buy_add_time_charge_upgrade_pressed.emit()
 
 func _on_pause_pressed() -> void:
 	pause_pressed.emit()
 
-
-
 func _on_resume_pressed() -> void:
 	resume_pressed.emit()
 
-
 func _on_reset_stage_pressed() -> void:
 	reset_stage_pressed.emit()
-
 
 func _on_pause_main_menu_pressed() -> void:
 	main_menu_pressed.emit()
@@ -430,13 +432,11 @@ func _on_stage_1_pressed() -> void:
 func _on_stage_2_pressed() -> void:
 	stage_selected.emit(2)
 
-
 func _on_stage_3_pressed() -> void:
 	stage_selected.emit(3)
 
 func _on_stage_back_pressed() -> void:
 	show_main_menu()
-
 
 func show_splash_screen() -> void:
 	splash_screen.visible = true
@@ -453,6 +453,9 @@ func show_main_menu() -> void:
 	stage_menu.visible = false
 	pause_menu.visible = false
 	upgrade_menu.visible = false
+	
+	if endless_hud != null:
+		endless_hud.visible = false
 
 func show_upgrade_menu() -> void:
 	splash_screen.visible = false
@@ -494,6 +497,9 @@ func show_stage_menu() -> void:
 	stage_menu.visible = true
 	pause_menu.visible = false
 	upgrade_menu.visible = false
+	
+	if endless_hud != null:
+		endless_hud.visible = false
 
 func update_wallet_money(wallet_money: int) -> void:
 	if wallet_label != null:
@@ -530,6 +536,48 @@ func update_stage_goal(
 	stage_goal_label.text += " | Customers "
 	stage_goal_label.text += str(customers_served) + "/" + str(customers_required)
 
+func update_endless_goal(current_layers: int, best_layers: int) -> void:
+	if endless_stats_label != null:
+		endless_stats_label.text = "Endless | Layers " + str(current_layers) + " | Best " + str(best_layers)
+
+func update_endless_result(result_text: String) -> void:
+	if endless_result_label != null:
+		endless_result_label.text = result_text
+
+func set_customer_slots_visible(should_be_visible: bool) -> void:
+	if customer_slot_a != null:
+		customer_slot_a.visible = should_be_visible
+
+	if customer_slot_b != null:
+		customer_slot_b.visible = should_be_visible
+
+func set_endless_hud_mode(is_endless: bool) -> void:
+	if score_label != null:
+		score_label.visible = not is_endless
+
+	if ingredient_label != null:
+		ingredient_label.visible = not is_endless
+
+	if stacks_label != null:
+		stacks_label.visible = not is_endless
+		
+	if result_label != null:
+		result_label.visible = not is_endless
+
+	if shift_label != null:
+		shift_label.visible = not is_endless
+
+	if stage_goal_label != null:
+		stage_goal_label.visible = not is_endless
+
+	if bottom_action_bar != null:
+		bottom_action_bar.visible = not is_endless
+
+	if endless_hud != null:
+		endless_hud.visible = is_endless
+
+	set_customer_slots_visible(not is_endless)
+
 func show_gameplay_message(message: String) -> void:
 	if result_label != null:
 		result_label.text = message
@@ -546,7 +594,6 @@ func show_gameplay_hud() -> void:
 func show_pause_menu() -> void:
 	pause_menu.visible = true
 	pause_menu.move_to_front()
-
 
 func hide_pause_menu() -> void:
 	pause_menu.visible = false
@@ -576,6 +623,9 @@ func show_shift_summary(
 	stage_menu.visible = false
 	pause_menu.visible = false
 	upgrade_menu.visible = false
+	
+	if endless_hud != null:
+		endless_hud.visible = false
 
 	game_over_label.position = Vector2(0, 250)
 	game_over_label.size = Vector2(540, 70)

@@ -279,6 +279,43 @@ text = "3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="EndlessHUD" type="Control" parent="GameplayHUD" unique_id=112116974]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="EndlessStatsLabel" type="Label" parent="GameplayHUD/EndlessHUD" unique_id=605955841]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 36.0
+offset_right = 384.0
+offset_bottom = 68.0
+text = "Endless | Layers 0 | Best 0"
+vertical_alignment = 1
+
+[node name="EndlessHintLabel" type="Label" parent="GameplayHUD/EndlessHUD" unique_id=1604165142]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 76.0
+offset_right = 444.0
+offset_bottom = 124.0
+text = "Stack as high as you can"
+autowrap_mode = 3
+
+[node name="EndlessResultLabel" type="Label" parent="GameplayHUD/EndlessHUD" unique_id=465947439]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 120.0
+offset_right = 444.0
+offset_bottom = 168.0
+text = "Layer 0"
+autowrap_mode = 3
+
 [node name="GameOverScreen" type="Control" parent="." unique_id=1410236899]
 layout_mode = 3
 anchors_preset = 15
@@ -404,6 +441,7 @@ offset_bottom = 588.0
 text = "Back"
 
 [node name="PauseMenu" type="Control" parent="." unique_id=334970413]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
