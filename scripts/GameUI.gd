@@ -12,7 +12,7 @@ signal stage_selected(stage_number: int)
 signal pause_pressed
 signal resume_pressed
 signal reset_stage_pressed
-
+signal add_time_requested(seconds: float)
 
 @onready var splash_screen: Control = $SplashScreen
 @onready var main_menu: Control = $MainMenu
@@ -37,7 +37,10 @@ signal reset_stage_pressed
 @onready var trash_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/TrashButton
 @onready var rush_hour_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/RushHourButton
 @onready var tip_boost_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/TipBoostButton
+
 @onready var add_time_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/AddTimeButton
+@onready var add_time_charge_bubble: PanelContainer = $GameplayHUD/BottomActionBar/ActionButtonRow/AddTimeButton/AddTimeChargeBubble
+@onready var add_time_charge_label: Label = $GameplayHUD/BottomActionBar/ActionButtonRow/AddTimeButton/AddTimeChargeBubble/CountLabel
 
 @onready var shift_label: Label = $GameplayHUD/ShiftLabel
 @onready var stage_goal_label: Label = $GameplayHUD/StageGoalLabel
@@ -96,6 +99,7 @@ func _ready() -> void:
 	
 	setup_gameplay_input_blockers()
 	setup_mouse_filter_defaults()
+	setup_charge_bubble_style()
 	
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	pause_menu.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -180,6 +184,39 @@ func _ready() -> void:
 	setup_customer_slot_dictionary()
 	
 	setup()
+
+func set_add_time_charges(current_charges: int, max_charges: int) -> void:
+	if add_time_charge_label != null:
+		add_time_charge_label.text = str(current_charges)
+
+	if add_time_charge_bubble != null:
+		add_time_charge_bubble.visible = max_charges > 0
+
+	if add_time_button != null:
+		add_time_button.disabled = current_charges <= 0
+
+		if current_charges <= 0:
+			add_time_button.modulate = Color(0.55, 0.55, 0.55, 1.0)
+		else:
+			add_time_button.modulate = Color.WHITE
+
+func setup_charge_bubble_style() -> void:
+	if add_time_charge_bubble == null:
+		return
+
+	var bubble_style: StyleBoxFlat = StyleBoxFlat.new()
+	bubble_style.bg_color = Color(0.95, 0.18, 0.10)
+	bubble_style.border_color = Color.WHITE
+	bubble_style.border_width_left = 2
+	bubble_style.border_width_top = 2
+	bubble_style.border_width_right = 2
+	bubble_style.border_width_bottom = 2
+	bubble_style.corner_radius_top_left = 12
+	bubble_style.corner_radius_top_right = 12
+	bubble_style.corner_radius_bottom_left = 12
+	bubble_style.corner_radius_bottom_right = 12
+
+	add_time_charge_bubble.add_theme_stylebox_override("panel", bubble_style)
 
 func setup_customer_orders(
 	order_a: Array[String],
@@ -290,9 +327,8 @@ func _on_rush_hour_pressed() -> void:
 func _on_tip_boost_pressed() -> void:
 	show_gameplay_message("Tip Boost coming soon")
 
-
 func _on_add_time_pressed() -> void:
-	show_gameplay_message("+5 Min coming soon")
+	add_time_requested.emit(5.0)
 
 func _on_play_pressed() -> void:
 	show_stage_menu()

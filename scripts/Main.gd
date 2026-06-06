@@ -128,6 +128,9 @@ var run_money: int = 0
 var wallet_money: int = 0
 var last_result: String = "Tap to drop"
 
+var add_time_max_charges: int = 3
+var add_time_charges: int = 3
+
 func change_run_money(amount: int) -> void:
 	run_money += amount
 
@@ -179,6 +182,7 @@ func _ready() -> void:
 	update_stage_select_ui()
 	
 	game_ui.trash_pressed.connect(Callable(self, "trash_current_ingredient"))
+	game_ui.add_time_requested.connect(Callable(self, "add_shift_time"))
 	game_ui.stage_selected.connect(Callable(self, "start_stage"))
 	game_ui.restart_pressed.connect(Callable(self, "start_next_stage"))
 	game_ui.main_menu_pressed.connect(Callable(self, "return_to_main_menu"))
@@ -187,6 +191,7 @@ func _ready() -> void:
 	game_ui.resume_pressed.connect(Callable(self, "resume_game"))
 	game_ui.reset_stage_pressed.connect(Callable(self, "reset_current_stage"))
 	
+	update_ability_ui()
 	setup_empty_stack_state()
 	assign_customer_orders()
 
@@ -373,6 +378,8 @@ func start_game() -> void:
 		ingredient_factory.reset_spawn_state()
 
 	game_state = GameState.PLAYING
+
+	reset_ability_charges()
 
 	run_money = 0
 	best_stack_height = 0
@@ -697,6 +704,36 @@ func request_flip() -> void:
 	flip_used = true
 	flip_available = false
 	flip_direction *= -1.0
+
+func add_shift_time(seconds: float) -> void:
+	if game_state != GameState.PLAYING:
+		return
+
+	if is_game_paused:
+		return
+
+	if add_time_charges <= 0:
+		last_result = "No +5 charges left"
+		update_ui()
+		update_ability_ui()
+		return
+
+	add_time_charges -= 1
+	shift_time_remaining += seconds
+
+	last_result = "Added +" + str(int(seconds)) + " seconds (" + str(add_time_charges) + " left)"
+
+	update_ui()
+	update_ability_ui()
+
+func reset_ability_charges() -> void:
+	add_time_charges = add_time_max_charges
+	update_ability_ui()
+
+
+func update_ability_ui() -> void:
+	if game_ui != null:
+		game_ui.set_add_time_charges(add_time_charges, add_time_max_charges)
 
 func trash_current_ingredient() -> void:
 	if active_ingredient == null:

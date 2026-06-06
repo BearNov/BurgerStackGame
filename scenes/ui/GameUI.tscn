@@ -267,6 +267,20 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "⏱ +5"
 
+[node name="AddTimeChargeBubble" type="PanelContainer" parent="GameplayHUD/BottomActionBar/ActionButtonRow/AddTimeButton" unique_id=2065171310]
+layout_mode = 0
+offset_left = 96.0
+offset_top = 4.0
+offset_right = 120.0
+offset_bottom = 28.0
+mouse_filter = 2
+
+[node name="CountLabel" type="Label" parent="GameplayHUD/BottomActionBar/ActionButtonRow/AddTimeButton/AddTimeChargeBubble" unique_id=1214240171]
+layout_mode = 2
+text = "3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="GameOverScreen" type="Control" parent="." unique_id=1410236899]
 layout_mode = 3
 anchors_preset = 15
