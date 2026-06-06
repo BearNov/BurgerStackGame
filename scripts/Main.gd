@@ -524,6 +524,7 @@ func end_shift(stage_cleared: bool = false) -> void:
 			has_next_stage_after_current()
 		)
 
+
 func create_static_scene_objects() -> void:
 	ingredient_factory.create_static_box(
 		self,

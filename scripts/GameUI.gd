@@ -33,7 +33,12 @@ signal reset_stage_pressed
 @onready var info_label: Label = $GameplayHUD/InfoLabel
 @onready var result_label: Label = $GameplayHUD/ResultLabel
 @onready var combo_popup_label: Label = $GameplayHUD/ComboPopupLabel
-@onready var trash_button: Button = $GameplayHUD/TrashButton
+
+@onready var trash_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/TrashButton
+@onready var rush_hour_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/RushHourButton
+@onready var tip_boost_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/TipBoostButton
+@onready var add_time_button: Button = $GameplayHUD/BottomActionBar/ActionButtonRow/AddTimeButton
+
 @onready var shift_label: Label = $GameplayHUD/ShiftLabel
 @onready var stage_goal_label: Label = $GameplayHUD/StageGoalLabel
 @onready var pause_button: Button = $GameplayHUD/PauseButton
@@ -140,7 +145,11 @@ func _ready() -> void:
 	combo_popup_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
 	combo_popup_label.add_theme_constant_override("outline_size", 5)
 
+	rush_hour_button.pressed.connect(_on_rush_hour_pressed)
+	tip_boost_button.pressed.connect(_on_tip_boost_pressed)
+	add_time_button.pressed.connect(_on_add_time_pressed)
 	trash_button.pressed.connect(_on_trash_pressed)
+	
 	play_button.pressed.connect(_on_play_pressed)
 	restart_button.pressed.connect(_on_restart_pressed)
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
@@ -233,6 +242,9 @@ func setup_gameplay_input_blockers() -> void:
 	var blocker_controls: Array[Control] = [
 		trash_button,
 		pause_button,
+		rush_hour_button,
+		tip_boost_button,
+		add_time_button,
 		play_button,
 		restart_button,
 		upgrade_button,
@@ -270,6 +282,17 @@ func _process(delta: float) -> void:
 
 func _on_trash_pressed() -> void:
 	trash_pressed.emit()
+
+func _on_rush_hour_pressed() -> void:
+	show_gameplay_message("Rush Hour coming soon")
+
+
+func _on_tip_boost_pressed() -> void:
+	show_gameplay_message("Tip Boost coming soon")
+
+
+func _on_add_time_pressed() -> void:
+	show_gameplay_message("+5 Min coming soon")
 
 func _on_play_pressed() -> void:
 	show_stage_menu()
@@ -395,6 +418,10 @@ func update_stage_goal(
 	stage_goal_label.text = "Stage " + str(stage_number)
 	stage_goal_label.text += " | Customers "
 	stage_goal_label.text += str(customers_served) + "/" + str(customers_required)
+
+func show_gameplay_message(message: String) -> void:
+	if result_label != null:
+		result_label.text = message
 
 func show_gameplay_hud() -> void:
 	splash_screen.visible = false

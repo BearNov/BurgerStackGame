@@ -119,7 +119,6 @@ theme_override_font_sizes/font_size = 26
 text = "Upgrade Restaurant"
 
 [node name="GameplayHUD" type="Control" parent="." unique_id=274346319]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -155,7 +154,6 @@ theme_override_font_sizes/font_size = 18
 text = "Stacks: A 0 x0 | B 0 x0 | Best 0"
 
 [node name="InfoLabel" type="Label" parent="GameplayHUD" unique_id=2060526070]
-visible = false
 layout_mode = 0
 offset_left = 24.0
 offset_top = 122.0
@@ -173,16 +171,7 @@ offset_bottom = 184.0
 theme_override_font_sizes/font_size = 18
 text = "Click to drop. Click again while falling to flip."
 
-[node name="TrashButton" type="Button" parent="GameplayHUD" unique_id=495227190]
-layout_mode = 0
-offset_left = 356.0
-offset_top = 24.0
-offset_right = 516.0
-offset_bottom = 70.0
-text = "Trash "
-
 [node name="ComboPopupLabel" type="Label" parent="GameplayHUD" unique_id=869823329]
-visible = false
 layout_mode = 0
 offset_left = 48.0
 offset_top = 195.0
@@ -238,8 +227,47 @@ offset_bottom = 70.0
 theme_override_font_sizes/font_size = 18
 text = "Pause"
 
+[node name="BottomActionBar" type="PanelContainer" parent="GameplayHUD" unique_id=331359454]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -76.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ActionButtonRow" type="HBoxContainer" parent="GameplayHUD/BottomActionBar" unique_id=352148085]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TrashButton" type="Button" parent="GameplayHUD/BottomActionBar/ActionButtonRow" unique_id=495227190]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Trash "
+
+[node name="RushHourButton" type="Button" parent="GameplayHUD/BottomActionBar/ActionButtonRow" unique_id=250472058]
+custom_minimum_size = Vector2(110, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🔥 Rush"
+
+[node name="TipBoostButton" type="Button" parent="GameplayHUD/BottomActionBar/ActionButtonRow" unique_id=1366232708]
+custom_minimum_size = Vector2(110, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "💰 Tip"
+
+[node name="AddTimeButton" type="Button" parent="GameplayHUD/BottomActionBar/ActionButtonRow" unique_id=1496034427]
+custom_minimum_size = Vector2(110, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "⏱ +5"
+
 [node name="GameOverScreen" type="Control" parent="." unique_id=1410236899]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

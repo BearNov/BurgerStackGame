@@ -179,6 +179,52 @@ func create_material(color: Color) -> StandardMaterial3D:
 	material.albedo_color = color
 	return material
 
+func create_patty_material() -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+
+	var albedo_texture: Texture2D = load("res://assets/materials/patty/patty_albedo.png")
+	var normal_texture: Texture2D = load("res://assets/materials/patty/patty_normal.png")
+	var roughness_texture: Texture2D = load("res://assets/materials/patty/patty_roughness.png")
+
+	material.albedo_texture = albedo_texture
+	material.albedo_color = Color.WHITE
+
+	material.normal_enabled = true
+	material.normal_texture = normal_texture
+	material.normal_scale = 0.35
+
+	material.roughness = 0.65
+	material.roughness_texture = roughness_texture
+
+	material.metallic = 0.0
+	material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+
+	return material
+
+func create_patty_side_material() -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+
+	var side_albedo_texture: Texture2D = load("res://assets/materials/patty/patty_side_strip_albedo.png")
+
+	material.albedo_texture = side_albedo_texture
+	material.albedo_color = Color(0.82, 0.72, 0.66, 1.0)
+
+	material.roughness = 0.82
+	material.metallic = 0.0
+	material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	
+
+	# No UV zoom for the side strip. The image already has the correct wide shape.
+	material.uv1_scale = Vector3(1.0, 1.0, 1.0)
+	material.uv1_offset = Vector3(0.0, 0.0, 0.0)
+
+	return material
+
 func add_box_visual(
 	parent: Node3D,
 	visual_name: String,
@@ -207,6 +253,102 @@ func add_default_ingredient_visual(parent: Node3D, size: Vector3, color: Color) 
 		size,
 		color
 	)
+
+func add_textured_patty_visual(parent: Node3D, size: Vector3) -> void:
+	var patty_body_color: Color = Color(0.23, 0.085, 0.035)
+
+	# Base body gives volume and keeps the patty readable.
+	add_box_visual(
+		parent,
+		"PattyBody",
+		Vector3(0.0, -size.y * 0.08, 0.0),
+		Vector3(size.x, size.y * 0.78, size.z),
+		patty_body_color
+	)
+
+	var body_center_y: float = -size.y * 0.08
+	var body_height: float = size.y * 0.78
+	var top_y: float = body_center_y + (body_height / 2.0) + 0.012
+	var bottom_y: float = body_center_y - (body_height / 2.0) - 0.012
+	var decal_offset: float = 0.008
+
+	# Top grilled texture.
+	var top_decal: MeshInstance3D = MeshInstance3D.new()
+	top_decal.name = "PattyTopGrillTexture"
+
+	var top_mesh: QuadMesh = QuadMesh.new()
+	top_mesh.size = Vector2(size.x, size.z)
+	top_decal.mesh = top_mesh
+
+	top_decal.position = Vector3(0.0, top_y, 0.0)
+	top_decal.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	top_decal.material_override = create_patty_material()
+	parent.add_child(top_decal)
+
+	# Bottom grilled texture, needed because ingredients can flip.
+	var bottom_decal: MeshInstance3D = MeshInstance3D.new()
+	bottom_decal.name = "PattyBottomGrillTexture"
+
+	var bottom_mesh: QuadMesh = QuadMesh.new()
+	bottom_mesh.size = Vector2(size.x, size.z)
+	bottom_decal.mesh = bottom_mesh
+
+	bottom_decal.position = Vector3(0.0, bottom_y, 0.0)
+	bottom_decal.rotation_degrees = Vector3(90.0, 0.0, 0.0)
+	bottom_decal.material_override = create_patty_material()
+	parent.add_child(bottom_decal)
+
+	# Front meat texture.
+	var front_decal: MeshInstance3D = MeshInstance3D.new()
+	front_decal.name = "PattyFrontMeatTexture"
+
+	var front_mesh: QuadMesh = QuadMesh.new()
+	front_mesh.size = Vector2(size.x, body_height)
+	front_decal.mesh = front_mesh
+
+	front_decal.position = Vector3(0.0, body_center_y, -(size.z / 2.0) - decal_offset)
+	front_decal.rotation_degrees = Vector3(0.0, 0.0, 0.0)
+	front_decal.material_override = create_patty_side_material()
+	parent.add_child(front_decal)
+
+	# Back meat texture.
+	var back_decal: MeshInstance3D = MeshInstance3D.new()
+	back_decal.name = "PattyBackMeatTexture"
+
+	var back_mesh: QuadMesh = QuadMesh.new()
+	back_mesh.size = Vector2(size.x, body_height)
+	back_decal.mesh = back_mesh
+
+	back_decal.position = Vector3(0.0, body_center_y, (size.z / 2.0) + decal_offset)
+	back_decal.rotation_degrees = Vector3(0.0, 180.0, 0.0)
+	back_decal.material_override = create_patty_side_material()
+	parent.add_child(back_decal)
+
+	# Left meat texture.
+	var left_decal: MeshInstance3D = MeshInstance3D.new()
+	left_decal.name = "PattyLeftMeatTexture"
+
+	var left_mesh: QuadMesh = QuadMesh.new()
+	left_mesh.size = Vector2(size.z, body_height)
+	left_decal.mesh = left_mesh
+
+	left_decal.position = Vector3(-(size.x / 2.0) - decal_offset, body_center_y, 0.0)
+	left_decal.rotation_degrees = Vector3(0.0, -90.0, 0.0)
+	left_decal.material_override = create_patty_side_material()
+	parent.add_child(left_decal)
+
+	# Right meat texture.
+	var right_decal: MeshInstance3D = MeshInstance3D.new()
+	right_decal.name = "PattyRightMeatTexture"
+
+	var right_mesh: QuadMesh = QuadMesh.new()
+	right_mesh.size = Vector2(size.z, body_height)
+	right_decal.mesh = right_mesh
+
+	right_decal.position = Vector3((size.x / 2.0) + decal_offset, body_center_y, 0.0)
+	right_decal.rotation_degrees = Vector3(0.0, 90.0, 0.0)
+	right_decal.material_override = create_patty_side_material()
+	parent.add_child(right_decal)
 
 func add_egg_visual(parent: Node3D, size: Vector3) -> void:
 	var egg_white_color: Color = Color(1.0, 0.96, 0.86)
@@ -337,6 +479,8 @@ func create_rigid_box(parent: Node3D, object_name: String, pos: Vector3, size: V
 		add_egg_visual(body, size)
 	elif object_name == "Onion":
 		add_onion_visual(body, size)
+	elif object_name == "Patty":
+		add_textured_patty_visual(body, size)
 	else:
 		add_default_ingredient_visual(body, size, color)
 
