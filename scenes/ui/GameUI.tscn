@@ -8,7 +8,6 @@
 script = ExtResource("1_3pxe2")
 
 [node name="SplashScreen" type="Control" parent="." unique_id=2088959010]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -44,7 +43,6 @@ expand_mode = 3
 stretch_mode = 5
 
 [node name="MainMenu" type="Control" parent="." unique_id=1859715231]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -406,7 +404,6 @@ offset_bottom = 588.0
 text = "Back"
 
 [node name="PauseMenu" type="Control" parent="." unique_id=334970413]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -459,3 +456,196 @@ offset_right = 420.0
 offset_bottom = 556.0
 theme_override_font_sizes/font_size = 24
 text = "Main Menu"
+
+[node name="UpgradeMenu" type="Control" parent="." unique_id=1363344050]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BackgroundPanel" type="PanelContainer" parent="UpgradeMenu" unique_id=1696096527]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="UpgradeMenu/BackgroundPanel" unique_id=1381268485]
+layout_mode = 2
+color = Color(0, 0, 0, 1)
+
+[node name="UpgradeContent" type="MarginContainer" parent="UpgradeMenu/BackgroundPanel" unique_id=1507186422]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 24
+
+[node name="UpgradeVBox" type="VBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent" unique_id=302105033]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox" unique_id=501838662]
+layout_mode = 2
+text = "Restaurant Upgrades"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WalletLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox" unique_id=655429464]
+layout_mode = 2
+text = "Wallet: $0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UpgradeList" type="VBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox" unique_id=626211289]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="AddTimeChargeCard" type="PanelContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList" unique_id=1709700549]
+layout_mode = 2
+
+[node name="CardRow" type="HBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard" unique_id=1153066317]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TextColumn" type="VBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow" unique_id=1616723511]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn" unique_id=1302784510]
+layout_mode = 2
+text = "Extra Time Charge"
+
+[node name="DescriptionLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn" unique_id=849818663]
+layout_mode = 2
+text = "+1 use of +5 seconds per shift"
+
+[node name="LevelLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn" unique_id=1287711909]
+layout_mode = 2
+text = "Level 0"
+
+[node name="CurrentEffectLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn" unique_id=391110268]
+layout_mode = 2
+text = "Current: 1 use / shift"
+
+[node name="NextEffectLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn" unique_id=2099725377]
+layout_mode = 2
+text = "Next: 2 uses / shift"
+
+[node name="CostLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn" unique_id=415919893]
+layout_mode = 2
+text = "Cost: $100"
+
+[node name="BuyButton" type="Button" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow" unique_id=1754992028]
+custom_minimum_size = Vector2(90, 48)
+layout_mode = 2
+text = "Buy"
+
+[node name="TipBoostCard" type="PanelContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList" unique_id=1178046861]
+layout_mode = 2
+
+[node name="CardRow" type="HBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard" unique_id=1121176603]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TextColumn" type="VBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard/CardRow" unique_id=302511110]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard/CardRow/TextColumn" unique_id=838319598]
+layout_mode = 2
+text = "Tip Boost"
+
+[node name="DescriptionLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard/CardRow/TextColumn" unique_id=1954062392]
+layout_mode = 2
+text = "Temporarily increase customer tips"
+
+[node name="LevelLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard/CardRow/TextColumn" unique_id=38562842]
+layout_mode = 2
+text = "Coming soon"
+
+[node name="CostLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard/CardRow/TextColumn" unique_id=1668616537]
+layout_mode = 2
+text = "Locked"
+
+[node name="BuyButton" type="Button" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard/CardRow" unique_id=1839326743]
+custom_minimum_size = Vector2(90, 48)
+layout_mode = 2
+disabled = true
+text = "Coming Soon"
+
+[node name="RushHourCard" type="PanelContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList" unique_id=275897817]
+layout_mode = 2
+
+[node name="CardRow" type="HBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard" unique_id=1044647760]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TextColumn" type="VBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard/CardRow" unique_id=595378407]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard/CardRow/TextColumn" unique_id=331210871]
+layout_mode = 2
+text = "Rush Hour"
+
+[node name="DescriptionLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard/CardRow/TextColumn" unique_id=2015140024]
+layout_mode = 2
+text = "Temporarily speed up customer flow"
+
+[node name="LevelLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard/CardRow/TextColumn" unique_id=292910624]
+layout_mode = 2
+text = "Coming soon"
+
+[node name="CostLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard/CardRow/TextColumn" unique_id=1100352374]
+layout_mode = 2
+text = "Locked"
+
+[node name="BuyButton" type="Button" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard/CardRow" unique_id=1178089378]
+custom_minimum_size = Vector2(90, 48)
+layout_mode = 2
+disabled = true
+text = "Coming Soon"
+
+[node name="ExtraPlateCard" type="PanelContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList" unique_id=685090177]
+layout_mode = 2
+
+[node name="CardRow" type="HBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard" unique_id=702150582]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TextColumn" type="VBoxContainer" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard/CardRow" unique_id=1022787834]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard/CardRow/TextColumn" unique_id=416744074]
+layout_mode = 2
+text = "Extra Plate Slot"
+
+[node name="DescriptionLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard/CardRow/TextColumn" unique_id=1482787419]
+layout_mode = 2
+text = "Unlock another plate/customer slot"
+
+[node name="LevelLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard/CardRow/TextColumn" unique_id=1499416817]
+layout_mode = 2
+text = "Coming soon"
+
+[node name="CostLabel" type="Label" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard/CardRow/TextColumn" unique_id=1522930396]
+layout_mode = 2
+text = "Locked"
+
+[node name="BuyButton" type="Button" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard/CardRow" unique_id=1997461796]
+custom_minimum_size = Vector2(90, 48)
+layout_mode = 2
+disabled = true
+text = "Coming Soon"
+
+[node name="BackButton" type="Button" parent="UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox" unique_id=1423254424]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Back"

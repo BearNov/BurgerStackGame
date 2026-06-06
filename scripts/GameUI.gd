@@ -13,11 +13,28 @@ signal pause_pressed
 signal resume_pressed
 signal reset_stage_pressed
 signal add_time_requested(seconds: float)
+signal upgrade_menu_back_pressed
+signal buy_add_time_charge_upgrade_pressed
+signal endless_mode_pressed
 
 @onready var splash_screen: Control = $SplashScreen
 @onready var main_menu: Control = $MainMenu
 @onready var gameplay_hud: Control = $GameplayHUD
 @onready var game_over_screen: Control = $GameOverScreen
+
+@onready var upgrade_menu: Control = $UpgradeMenu
+@onready var add_time_charge_card: PanelContainer = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard
+@onready var rush_hour_card: PanelContainer = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/RushHourCard
+@onready var tip_boost_card: PanelContainer = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/TipBoostCard
+@onready var extra_plate_card: PanelContainer = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/ExtraPlateCard
+@onready var upgrade_wallet_label: Label = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/WalletLabel
+@onready var upgrade_back_button: Button = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/BackButton
+
+@onready var add_time_upgrade_level_label: Label = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn/LevelLabel
+@onready var add_time_upgrade_current_effect_label: Label = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn/CurrentEffectLabel
+@onready var add_time_upgrade_next_effect_label: Label = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn/NextEffectLabel
+@onready var add_time_upgrade_cost_label: Label = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/TextColumn/CostLabel
+@onready var add_time_upgrade_buy_button: Button = $UpgradeMenu/BackgroundPanel/UpgradeContent/UpgradeVBox/UpgradeList/AddTimeChargeCard/CardRow/BuyButton
 
 @onready var stage_menu: Control = $StageMenu
 @onready var stage_1_button: Button = $StageMenu/Stage1Button
@@ -100,6 +117,7 @@ func _ready() -> void:
 	setup_gameplay_input_blockers()
 	setup_mouse_filter_defaults()
 	setup_charge_bubble_style()
+	setup_upgrade_card_styles()
 	
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	pause_menu.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -154,6 +172,9 @@ func _ready() -> void:
 	add_time_button.pressed.connect(_on_add_time_pressed)
 	trash_button.pressed.connect(_on_trash_pressed)
 	
+	upgrade_back_button.pressed.connect(_on_upgrade_back_pressed)
+	add_time_upgrade_buy_button.pressed.connect(_on_buy_add_time_charge_upgrade_pressed)
+	
 	play_button.pressed.connect(_on_play_pressed)
 	restart_button.pressed.connect(_on_restart_pressed)
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
@@ -175,11 +196,16 @@ func _ready() -> void:
 	stage_3_button.pressed.connect(_on_stage_3_pressed)
 	stage_back_button.pressed.connect(_on_stage_back_pressed)
 
+	if endless_mode_button != null:
+		endless_mode_button.pressed.connect(_on_endless_mode_pressed)
+
 	if main_upgrade_button != null:
 		main_upgrade_button.pressed.connect(_on_upgrade_pressed)
 
 	if endless_mode_button != null:
 		endless_mode_button.pressed.connect(_on_endless_mode_pressed)
+
+	
 
 	setup_customer_slot_dictionary()
 	
@@ -217,6 +243,36 @@ func setup_charge_bubble_style() -> void:
 	bubble_style.corner_radius_bottom_right = 12
 
 	add_time_charge_bubble.add_theme_stylebox_override("panel", bubble_style)
+
+func setup_upgrade_card_styles() -> void:
+	var card_style: StyleBoxFlat = StyleBoxFlat.new()
+	card_style.bg_color = Color(0.075, 0.075, 0.075, 1.0)
+	card_style.border_color = Color(0.14, 0.14, 0.14, 1.0)
+	card_style.border_width_left = 1
+	card_style.border_width_top = 1
+	card_style.border_width_right = 1
+	card_style.border_width_bottom = 1
+	card_style.corner_radius_top_left = 4
+	card_style.corner_radius_top_right = 4
+	card_style.corner_radius_bottom_left = 4
+	card_style.corner_radius_bottom_right = 4
+
+	# Internal padding inside each card.
+	card_style.set_content_margin(SIDE_LEFT, 12)
+	card_style.set_content_margin(SIDE_TOP, 10)
+	card_style.set_content_margin(SIDE_RIGHT, 12)
+	card_style.set_content_margin(SIDE_BOTTOM, 10)
+
+	var cards: Array[PanelContainer] = [
+		add_time_charge_card,
+		rush_hour_card,
+		tip_boost_card,
+		extra_plate_card
+	]
+
+	for card: PanelContainer in cards:
+		if card != null:
+			card.add_theme_stylebox_override("panel", card_style)
 
 func setup_customer_orders(
 	order_a: Array[String],
@@ -333,6 +389,9 @@ func _on_add_time_pressed() -> void:
 func _on_play_pressed() -> void:
 	show_stage_menu()
 
+func _on_endless_mode_pressed() -> void:
+	endless_mode_pressed.emit()
+
 func _on_restart_pressed() -> void:
 	restart_pressed.emit()
 
@@ -342,8 +401,16 @@ func _on_upgrade_pressed() -> void:
 func _on_main_menu_pressed() -> void:
 	main_menu_pressed.emit()
 
+func _on_upgrade_back_pressed() -> void:
+	upgrade_menu_back_pressed.emit()
+
+
+func _on_buy_add_time_charge_upgrade_pressed() -> void:
+	buy_add_time_charge_upgrade_pressed.emit()
+
 func _on_pause_pressed() -> void:
 	pause_pressed.emit()
+
 
 
 func _on_resume_pressed() -> void:
@@ -371,9 +438,6 @@ func _on_stage_back_pressed() -> void:
 	show_main_menu()
 
 
-func _on_endless_mode_pressed() -> void:
-	show_endless_placeholder()
-
 func show_splash_screen() -> void:
 	splash_screen.visible = true
 	main_menu.visible = false
@@ -388,6 +452,16 @@ func show_main_menu() -> void:
 	game_over_screen.visible = false
 	stage_menu.visible = false
 	pause_menu.visible = false
+	upgrade_menu.visible = false
+
+func show_upgrade_menu() -> void:
+	splash_screen.visible = false
+	main_menu.visible = false
+	gameplay_hud.visible = false
+	game_over_screen.visible = false
+	stage_menu.visible = false
+	pause_menu.visible = false
+	upgrade_menu.visible = true
 
 func update_stage_buttons(
 	unlocked_stage: int,
@@ -419,6 +493,7 @@ func show_stage_menu() -> void:
 	game_over_screen.visible = false
 	stage_menu.visible = true
 	pause_menu.visible = false
+	upgrade_menu.visible = false
 
 func update_wallet_money(wallet_money: int) -> void:
 	if wallet_label != null:
@@ -466,6 +541,7 @@ func show_gameplay_hud() -> void:
 	game_over_screen.visible = false
 	stage_menu.visible = false
 	pause_menu.visible = false
+	upgrade_menu.visible = false
 
 func show_pause_menu() -> void:
 	pause_menu.visible = true
@@ -499,6 +575,7 @@ func show_shift_summary(
 	game_over_screen.visible = true
 	stage_menu.visible = false
 	pause_menu.visible = false
+	upgrade_menu.visible = false
 
 	game_over_label.position = Vector2(0, 250)
 	game_over_label.size = Vector2(540, 70)
@@ -915,3 +992,34 @@ func is_pointer_over_ui(screen_position: Vector2) -> bool:
 			return true
 
 	return false
+
+func update_upgrade_menu(
+	wallet_money: int,
+	add_time_level: int,
+	add_time_cost: int
+) -> void:
+	var current_uses: int = add_time_level + 1
+	var next_uses: int = current_uses + 1
+
+	if upgrade_wallet_label != null:
+		upgrade_wallet_label.text = "Wallet: $" + str(wallet_money)
+
+	if add_time_upgrade_level_label != null:
+		add_time_upgrade_level_label.text = "Level: " + str(add_time_level)
+
+	if add_time_upgrade_current_effect_label != null:
+		add_time_upgrade_current_effect_label.text = "Current: " + str(current_uses) + " uses / shift"
+
+	if add_time_upgrade_next_effect_label != null:
+		add_time_upgrade_next_effect_label.text = "Next: " + str(next_uses) + " uses / shift"
+
+	if add_time_upgrade_cost_label != null:
+		add_time_upgrade_cost_label.text = "Cost: $" + str(add_time_cost)
+
+	if add_time_upgrade_buy_button != null:
+		add_time_upgrade_buy_button.disabled = wallet_money < add_time_cost
+
+		if wallet_money < add_time_cost:
+			add_time_upgrade_buy_button.text = "Need $" + str(add_time_cost - wallet_money)
+		else:
+			add_time_upgrade_buy_button.text = "Buy"

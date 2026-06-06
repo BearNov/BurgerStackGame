@@ -6,6 +6,7 @@ const BurgerStackScript = preload("res://scripts/BurgerStack.gd")
 
 const SAVE_FILE_PATH: String = "user://burger_stack_save.cfg"
 const SAVE_SECTION: String = "player"
+const UPGRADES_SAVE_PATH: String = "user://restaurant_upgrades.save"
 
 var ingredient_factory: IngredientFactory = null
 var game_ui: GameUI = null
@@ -15,6 +16,11 @@ enum GameState {
 	MENU,
 	PLAYING,
 	GAME_OVER
+}
+
+enum GameMode {
+	RESTAURANT,
+	ENDLESS
 }
 
 var customer_order_pool: Array[String] = [
@@ -36,6 +42,7 @@ var stack_ingredients: Dictionary = {}
 var stack_style_bonuses: Dictionary = {}
 
 var game_state: GameState = GameState.SPLASH
+var current_game_mode: GameMode = GameMode.RESTAURANT
 var splash_timer: float = 0.0
 var splash_duration: float = 1.8
 
@@ -128,8 +135,12 @@ var run_money: int = 0
 var wallet_money: int = 0
 var last_result: String = "Tap to drop"
 
-var add_time_max_charges: int = 3
-var add_time_charges: int = 3
+var add_time_base_charges: int = 1
+var add_time_charge_upgrade_level: int = 0
+var add_time_max_charges: int = 1
+var add_time_charges: int = 1
+var add_time_charge_upgrade_base_cost: int = 100
+var add_time_charge_upgrade_cost_increase: int = 75
 
 func change_run_money(amount: int) -> void:
 	run_money += amount
@@ -157,6 +168,27 @@ func load_wallet_money() -> void:
 	if unlocked_stage > max_selectable_stage:
 		unlocked_stage = max_selectable_stage
 
+func load_restaurant_upgrades() -> void:
+	if not FileAccess.file_exists(UPGRADES_SAVE_PATH):
+		add_time_charge_upgrade_level = 0
+		return
+
+	var file: FileAccess = FileAccess.open(UPGRADES_SAVE_PATH, FileAccess.READ)
+
+	if file == null:
+		var load_error: Error = FileAccess.get_open_error()
+		push_warning("Could not load restaurant upgrades. Error: " + str(load_error))
+		add_time_charge_upgrade_level = 0
+		return
+
+	var save_data: Variant = file.get_var()
+	file.close()
+
+	if save_data is Dictionary:
+		add_time_charge_upgrade_level = int(save_data.get("add_time_charge_upgrade_level", 0))
+	else:
+		add_time_charge_upgrade_level = 0
+
 func save_wallet_money() -> void:
 	var save_file: ConfigFile = ConfigFile.new()
 
@@ -168,9 +200,25 @@ func save_wallet_money() -> void:
 	if save_error != OK:
 		push_warning("Could not save wallet money. Error: " + str(save_error))
 
+func save_restaurant_upgrades() -> void:
+	var save_data: Dictionary = {
+		"add_time_charge_upgrade_level": add_time_charge_upgrade_level
+	}
+
+	var file: FileAccess = FileAccess.open(UPGRADES_SAVE_PATH, FileAccess.WRITE)
+
+	if file == null:
+		var save_error: Error = FileAccess.get_open_error()
+		push_warning("Could not save restaurant upgrades. Error: " + str(save_error))
+		return
+
+	file.store_var(save_data)
+	file.close()
+
 func _ready() -> void:
 	randomize()
 	load_wallet_money()
+	load_restaurant_upgrades()
 
 	ingredient_factory = IngredientFactoryScript.new()
 	add_child(ingredient_factory)
@@ -183,15 +231,22 @@ func _ready() -> void:
 	
 	game_ui.trash_pressed.connect(Callable(self, "trash_current_ingredient"))
 	game_ui.add_time_requested.connect(Callable(self, "add_shift_time"))
-	game_ui.stage_selected.connect(Callable(self, "start_stage"))
+	game_ui.stage_selected.connect(Callable(self, "start_restaurant_mode"))
+	game_ui.endless_mode_pressed.connect(Callable(self, "start_endless_mode"))
 	game_ui.restart_pressed.connect(Callable(self, "start_next_stage"))
 	game_ui.main_menu_pressed.connect(Callable(self, "return_to_main_menu"))
 	game_ui.upgrade_pressed.connect(Callable(self, "show_upgrade_placeholder"))
 	game_ui.pause_pressed.connect(Callable(self, "pause_game"))
 	game_ui.resume_pressed.connect(Callable(self, "resume_game"))
 	game_ui.reset_stage_pressed.connect(Callable(self, "reset_current_stage"))
+	game_ui.upgrade_menu_back_pressed.connect(Callable(self, "return_to_main_menu"))
+	game_ui.buy_add_time_charge_upgrade_pressed.connect(Callable(self, "buy_add_time_charge_upgrade"))
 	
+	
+	add_time_max_charges = calculate_add_time_max_charges()
+	add_time_charges = add_time_max_charges
 	update_ability_ui()
+	
 	setup_empty_stack_state()
 	assign_customer_orders()
 
@@ -335,7 +390,17 @@ func reset_current_stage() -> void:
 
 	start_stage(current_stage)
 
+func start_endless_mode() -> void:
+	current_game_mode = GameMode.ENDLESS
+	last_result = "Endless Mode coming soon"
+	update_ui()
+
+func start_restaurant_mode(stage_number: int) -> void:
+	current_game_mode = GameMode.RESTAURANT
+	start_stage(stage_number)
+
 func start_stage(stage_number: int) -> void:
+	current_game_mode = GameMode.RESTAURANT
 	is_game_paused = false
 	get_tree().paused = false
 
@@ -484,8 +549,11 @@ func return_to_main_menu() -> void:
 		game_ui.show_main_menu()
 
 func show_upgrade_placeholder() -> void:
-	if game_ui != null:
-		game_ui.show_upgrade_placeholder(wallet_money)
+	if game_ui == null:
+		return
+
+	update_upgrade_menu_ui()
+	game_ui.show_upgrade_menu()
 
 func end_shift(stage_cleared: bool = false) -> void:
 	if shift_has_ended:
@@ -726,14 +794,54 @@ func add_shift_time(seconds: float) -> void:
 	update_ui()
 	update_ability_ui()
 
+func calculate_add_time_max_charges() -> int:
+	return add_time_base_charges + add_time_charge_upgrade_level
+
+func calculate_add_time_charge_upgrade_cost() -> int:
+	return add_time_charge_upgrade_base_cost + (add_time_charge_upgrade_level * add_time_charge_upgrade_cost_increase)
+
 func reset_ability_charges() -> void:
+	add_time_max_charges = calculate_add_time_max_charges()
 	add_time_charges = add_time_max_charges
 	update_ability_ui()
-
 
 func update_ability_ui() -> void:
 	if game_ui != null:
 		game_ui.set_add_time_charges(add_time_charges, add_time_max_charges)
+
+func update_upgrade_menu_ui() -> void:
+	if game_ui == null:
+		return
+
+	game_ui.update_upgrade_menu(
+		wallet_money,
+		add_time_charge_upgrade_level,
+		calculate_add_time_charge_upgrade_cost()
+	)
+
+func buy_add_time_charge_upgrade() -> void:
+	var upgrade_cost: int = calculate_add_time_charge_upgrade_cost()
+
+	if wallet_money < upgrade_cost:
+		last_result = "Not enough money for Extra Time Charge upgrade ($" + str(upgrade_cost) + ")"
+		update_ui()
+		update_ability_ui()
+		update_upgrade_menu_ui()
+		return
+
+	wallet_money -= upgrade_cost
+	save_wallet_money()
+
+	add_time_charge_upgrade_level += 1
+	add_time_max_charges = calculate_add_time_max_charges()
+	add_time_charges = add_time_max_charges
+
+	save_restaurant_upgrades()
+
+	last_result = "Bought Extra Time Charge Lv." + str(add_time_charge_upgrade_level) + " ($" + str(upgrade_cost) + ")"
+	update_ui()
+	update_ability_ui()
+	update_upgrade_menu_ui()
 
 func trash_current_ingredient() -> void:
 	if active_ingredient == null:
