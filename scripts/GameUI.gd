@@ -67,7 +67,7 @@ signal endless_mode_pressed
 @onready var endless_stats_label: Label = $GameplayHUD/EndlessHUD/EndlessStatsLabel
 @onready var endless_hint_label: Label = $GameplayHUD/EndlessHUD/EndlessHintLabel
 @onready var endless_result_label: Label = $GameplayHUD/EndlessHUD/EndlessResultLabel
-
+@onready var endless_bonus_label: Label = $GameplayHUD/EndlessHUD/EndlessBonusLabel
 
 @onready var pause_button: Button = $GameplayHUD/PauseButton
 
@@ -102,6 +102,8 @@ var customer_money_preview_by_stack: Dictionary = {}
 var money_popup_items: Array[Dictionary] = []
 var money_popup_duration: float = 0.85
 var money_popup_float_height: float = 48.0
+var endless_bonus_tween: Tween = null
+
 
 func setup_mouse_filter_defaults() -> void:
 	if gameplay_hud != null:
@@ -536,13 +538,76 @@ func update_stage_goal(
 	stage_goal_label.text += " | Customers "
 	stage_goal_label.text += str(customers_served) + "/" + str(customers_required)
 
-func update_endless_goal(current_layers: int, best_layers: int) -> void:
-	if endless_stats_label != null:
-		endless_stats_label.text = "Endless | Layers " + str(current_layers) + " | Best " + str(best_layers)
+func update_endless_goal(
+	current_layers: int,
+	best_layers: int,
+	time_remaining: float = -1.0,
+	next_bonus_layer: int = -1
+) -> void:
+	if endless_stats_label == null:
+		return
+
+	var text: String = "Endless | Layers " + str(current_layers) + " | Best " + str(best_layers)
+
+	if time_remaining >= 0.0:
+		var total_seconds: int = int(ceil(time_remaining))
+
+		if total_seconds < 0:
+			total_seconds = 0
+
+		var minutes: int = int(total_seconds / 60)
+		var seconds: int = total_seconds % 60
+		var seconds_text: String = str(seconds)
+
+		if seconds < 10:
+			seconds_text = "0" + seconds_text
+
+		text = "Time " + str(minutes) + ":" + seconds_text
+		text += " | Layers " + str(current_layers)
+		text += " | Best " + str(best_layers)
+
+	if next_bonus_layer > 0:
+		text += "\nNext bonus: " + str(next_bonus_layer) + " layers"
+
+	endless_stats_label.text = text
 
 func update_endless_result(result_text: String) -> void:
 	if endless_result_label != null:
 		endless_result_label.text = result_text
+
+func show_endless_time_bonus(seconds_added: int, milestone_layer: int) -> void:
+	if endless_bonus_label == null:
+		return
+
+	if endless_stats_label == null:
+		return
+
+	if endless_bonus_tween != null:
+		endless_bonus_tween.kill()
+		endless_bonus_tween = null
+
+	endless_bonus_label.text = "+" + str(seconds_added) + "s"
+	endless_bonus_label.visible = true
+	endless_bonus_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	endless_bonus_label.scale = Vector2(1.0, 1.0)
+
+	var start_position: Vector2 = Vector2(220, 145)
+	var target_position: Vector2 = endless_stats_label.position + Vector2(150, 0)
+
+	endless_bonus_label.position = start_position
+
+	endless_bonus_tween = create_tween()
+	endless_bonus_tween.set_parallel(true)
+	endless_bonus_tween.tween_property(endless_bonus_label, "position", target_position, 0.75)
+	endless_bonus_tween.tween_property(endless_bonus_label, "modulate:a", 0.0, 0.75)
+	endless_bonus_tween.tween_property(endless_bonus_label, "scale", Vector2(0.65, 0.65), 0.75)
+
+	await endless_bonus_tween.finished
+
+	if endless_bonus_label != null:
+		endless_bonus_label.visible = false
+		endless_bonus_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		endless_bonus_label.scale = Vector2(1.0, 1.0)
 
 func set_customer_slots_visible(should_be_visible: bool) -> void:
 	if customer_slot_a != null:
@@ -605,6 +670,44 @@ func show_game_over(final_score: int) -> void:
 	game_over_screen.visible = true
 
 	final_score_label.text = "Final Score: " + str(final_score)
+
+func show_endless_summary(
+	best_layers: int,
+	current_layers: int
+) -> void:
+	splash_screen.visible = false
+	main_menu.visible = false
+	gameplay_hud.visible = false
+	game_over_screen.visible = true
+	stage_menu.visible = false
+	pause_menu.visible = false
+	upgrade_menu.visible = false
+
+	if endless_hud != null:
+		endless_hud.visible = false
+
+	game_over_label.position = Vector2(0, 250)
+	game_over_label.size = Vector2(540, 70)
+	game_over_label.text = "Endless Run Over"
+
+	final_score_label.position = Vector2(60, 340)
+	final_score_label.size = Vector2(420, 150)
+	final_score_label.custom_minimum_size = Vector2(420, 150)
+	final_score_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	final_score_label.text = "Layers reached: " + str(current_layers)
+	final_score_label.text += "\nBest Layers: " + str(best_layers)
+
+	restart_button.position = Vector2(150, 570)
+	upgrade_button.position = Vector2(150, 635)
+	main_menu_button.position = Vector2(150, 700)
+
+	restart_button.text = "Retry Endless"
+	upgrade_button.text = "Upgrade Restaurant"
+	main_menu_button.text = "Main Menu"
+
+	restart_button.disabled = false
+	upgrade_button.disabled = false
+	main_menu_button.disabled = false
 
 func show_shift_summary(
 	run_money: int,

@@ -43,8 +43,15 @@ var stack_style_bonuses: Dictionary = {}
 
 var game_state: GameState = GameState.SPLASH
 var current_game_mode: GameMode = GameMode.RESTAURANT
+
 var endless_current_layers: int = 0
 var endless_best_layers: int = 0
+var endless_start_time: float = 60.0
+var endless_time_remaining: float = 60.0
+var endless_layer_bonus_step: int = 10
+var endless_bonus_seconds: float = 30.0
+var endless_next_bonus_layer: int = 10
+
 var splash_timer: float = 0.0
 var splash_duration: float = 1.8
 
@@ -241,7 +248,7 @@ func _ready() -> void:
 	game_ui.add_time_requested.connect(Callable(self, "add_shift_time"))
 	game_ui.stage_selected.connect(Callable(self, "start_restaurant_mode"))
 	game_ui.endless_mode_pressed.connect(Callable(self, "start_endless_mode"))
-	game_ui.restart_pressed.connect(Callable(self, "start_next_stage"))
+	game_ui.restart_pressed.connect(Callable(self, "handle_restart_pressed"))
 	game_ui.main_menu_pressed.connect(Callable(self, "return_to_main_menu"))
 	game_ui.upgrade_pressed.connect(Callable(self, "show_upgrade_placeholder"))
 	game_ui.pause_pressed.connect(Callable(self, "pause_game"))
@@ -400,6 +407,43 @@ func reset_restaurant_stage() -> void:
 func reset_endless_run() -> void:
 	start_endless_mode()
 
+func update_endless_timer(delta: float) -> void:
+	if game_state != GameState.PLAYING:
+		return
+
+	if current_game_mode != GameMode.ENDLESS:
+		return
+
+	endless_time_remaining -= delta
+
+	if endless_time_remaining <= 0.0:
+		endless_time_remaining = 0.0
+		end_endless_run()
+
+func end_endless_run() -> void:
+	if game_state != GameState.PLAYING:
+		return
+
+	game_state = GameState.GAME_OVER
+	is_game_paused = false
+	get_tree().paused = false
+
+	if active_ingredient != null and is_instance_valid(active_ingredient):
+		active_ingredient.queue_free()
+
+	active_ingredient = null
+	can_drop = false
+	flip_available = false
+	flip_used = false
+
+	last_result = "Endless run over | Best " + str(endless_best_layers)
+
+	if game_ui != null:
+		game_ui.show_endless_summary(
+			endless_best_layers,
+			endless_current_layers
+		)
+
 func start_endless_mode() -> void:
 	current_game_mode = GameMode.ENDLESS
 	game_state = GameState.PLAYING
@@ -413,6 +457,9 @@ func start_endless_mode() -> void:
 	run_money = 0
 	endless_current_layers = 0
 	best_stack_height = 0
+	
+	endless_time_remaining = endless_start_time
+	endless_next_bonus_layer = endless_layer_bonus_step
 
 	shift_timer_running = false
 	shift_has_ended = false
@@ -426,7 +473,12 @@ func start_endless_mode() -> void:
 	if game_ui != null:
 		game_ui.hide_pause_menu()
 		game_ui.show_gameplay_hud()
-		game_ui.update_endless_goal(endless_current_layers, endless_best_layers)
+		game_ui.update_endless_goal(
+			endless_current_layers,
+			endless_best_layers,
+			endless_time_remaining,
+			endless_next_bonus_layer
+		)
 
 	spawn_ingredient()
 	update_ui()
@@ -536,6 +588,12 @@ func clear_current_run_objects() -> void:
 
 func has_next_stage_after_current() -> bool:
 	return current_stage < max_selectable_stage
+
+func handle_restart_pressed() -> void:
+	if current_game_mode == GameMode.ENDLESS:
+		start_endless_mode()
+	else:
+		start_next_stage()
 
 func start_next_stage() -> void:
 	if stage_was_cleared:
@@ -814,13 +872,17 @@ func _process(delta: float) -> void:
 	if game_state != GameState.PLAYING:
 		return
 
-	if shift_timer_running:
-		shift_time_remaining -= delta
+	if current_game_mode == GameMode.ENDLESS:
+		update_endless_timer(delta)
+	else:
+		if shift_timer_running:
+			shift_time_remaining -= delta
 
-		if shift_time_remaining <= 0.0:
-			shift_time_remaining = 0.0
-			end_shift(false)
-			return
+			if shift_time_remaining <= 0.0:
+				shift_time_remaining = 0.0
+				end_shift(false)
+				return
+			
 	time += delta
 
 	if active_ingredient != null and can_drop:
@@ -1038,6 +1100,27 @@ func spawn_ingredient() -> void:
 		missing_ingredient_names,
 		has_ready_order
 	)
+	
+	if current_game_mode == GameMode.ENDLESS:
+		var reroll_count: int = 0
+
+		while str(ingredient_data["name"]) == "Top Bun" and reroll_count < 12:
+			ingredient_data = ingredient_factory.choose_smart_ingredient(
+				[],
+				false
+		)
+		reroll_count += 1
+
+		if str(ingredient_data["name"]) == "Top Bun":
+			ingredient_data = {
+				"name": "Patty",
+				"width": 0.90,
+				"height": 0.16,
+				"depth": 0.85,
+				"mass": 0.35,
+				"color": Color(0.25, 0.10, 0.04)
+			}
+	
 	current_ingredient_name = str(ingredient_data["name"])
 	current_ingredient_width = float(ingredient_data["width"])
 	current_ingredient_height = float(ingredient_data["height"])
@@ -1125,10 +1208,10 @@ func update_endless_layer_score() -> void:
 
 		if not is_instance_valid(stack):
 			continue
-		
+
 		if not active_stack_names.has(stack.get_stack_name()):
 			continue
-		
+
 		var layer_count: int = stack.get_ingredient_layer_count()
 
 		if layer_count > highest_layer_count:
@@ -1139,8 +1222,27 @@ func update_endless_layer_score() -> void:
 	if endless_current_layers > endless_best_layers:
 		endless_best_layers = endless_current_layers
 
+	while endless_best_layers >= endless_next_bonus_layer:
+		var reached_bonus_layer: int = endless_next_bonus_layer
+
+		endless_time_remaining += endless_bonus_seconds
+		last_result = "+" + str(int(endless_bonus_seconds)) + "s bonus! Reached " + str(reached_bonus_layer) + " layers"
+
+		if game_ui != null:
+			game_ui.show_endless_time_bonus(
+				int(endless_bonus_seconds),
+				reached_bonus_layer
+			)
+
+		endless_next_bonus_layer += endless_layer_bonus_step
+
 	if game_ui != null:
-		game_ui.update_endless_goal(endless_current_layers, endless_best_layers)
+		game_ui.update_endless_goal(
+			endless_current_layers,
+			endless_best_layers,
+			endless_time_remaining,
+			endless_next_bonus_layer
+		)
 
 func evaluate_restaurant_landing(body: RigidBody3D) -> void:
 	if body == null:
@@ -1800,7 +1902,12 @@ func update_ui() -> void:
 		game_ui.update_shift_time(shift_time_remaining)	
 		
 	if current_game_mode == GameMode.ENDLESS:
-		game_ui.update_endless_goal(endless_current_layers, endless_best_layers)
+		game_ui.update_endless_goal(
+			endless_current_layers,
+			endless_best_layers,
+			endless_time_remaining,
+			endless_next_bonus_layer
+		)
 	else:
 		game_ui.update_stage_goal(
 			current_stage,

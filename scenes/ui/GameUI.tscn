@@ -316,6 +316,18 @@ offset_bottom = 168.0
 text = "Layer 0"
 autowrap_mode = 3
 
+[node name="EndlessBonusLabel" type="Label" parent="GameplayHUD/EndlessHUD" unique_id=1476353253]
+visible = false
+layout_mode = 0
+offset_left = 220.0
+offset_top = 145.0
+offset_right = 340.0
+offset_bottom = 185.0
+theme_override_font_sizes/font_size = 30
+text = "+30s"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="GameOverScreen" type="Control" parent="." unique_id=1410236899]
 layout_mode = 3
 anchors_preset = 15
