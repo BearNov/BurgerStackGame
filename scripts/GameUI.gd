@@ -686,28 +686,33 @@ func show_endless_summary(
 	if endless_hud != null:
 		endless_hud.visible = false
 
-	game_over_label.position = Vector2(0, 250)
-	game_over_label.size = Vector2(540, 70)
+	game_over_label.position = Vector2(0, 235)
+	game_over_label.size = Vector2(540, 80)
 	game_over_label.text = "Endless Run Over"
 
-	final_score_label.position = Vector2(60, 340)
-	final_score_label.size = Vector2(420, 150)
-	final_score_label.custom_minimum_size = Vector2(420, 150)
+	final_score_label.position = Vector2(60, 330)
+	final_score_label.size = Vector2(420, 170)
+	final_score_label.custom_minimum_size = Vector2(420, 170)
 	final_score_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
 	final_score_label.text = "Layers reached: " + str(current_layers)
 	final_score_label.text += "\nBest Layers: " + str(best_layers)
 
-	restart_button.position = Vector2(150, 570)
-	upgrade_button.position = Vector2(150, 635)
-	main_menu_button.position = Vector2(150, 700)
+	if current_layers >= best_layers:
+		final_score_label.text += "\nNew Best!"
+
+	restart_button.position = Vector2(150, 545)
+	main_menu_button.position = Vector2(150, 620)
 
 	restart_button.text = "Retry Endless"
-	upgrade_button.text = "Upgrade Restaurant"
 	main_menu_button.text = "Main Menu"
 
 	restart_button.disabled = false
-	upgrade_button.disabled = false
 	main_menu_button.disabled = false
+
+	# Endless Mode does not use Restaurant upgrades for now.
+	upgrade_button.visible = false
+	upgrade_button.disabled = true
 
 func show_shift_summary(
 	run_money: int,
@@ -758,6 +763,8 @@ func show_shift_summary(
 	final_score_label.text += "\nRun Money: $" + str(run_money)
 	final_score_label.text += "\nAdded to Wallet: $" + str(added_money)
 	final_score_label.text += "\nWallet Total: $" + str(wallet_money)
+
+	upgrade_button.visible = true
 
 	upgrade_button.text = "Upgrade Restaurant"
 	main_menu_button.text = "Main Menu"
