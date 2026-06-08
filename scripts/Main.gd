@@ -11,6 +11,16 @@ const UPGRADES_SAVE_PATH: String = "user://restaurant_upgrades.save"
 var ingredient_factory: IngredientFactory = null
 var game_ui: GameUI = null
 
+@onready var main_camera: Camera3D = get_node_or_null("Camera3D") as Camera3D
+
+var restaurant_camera_position: Vector3 = Vector3(0.0, 3.6, 6.2)
+var restaurant_camera_rotation_degrees: Vector3 = Vector3(-28.0, 0.0, 0.0)
+var restaurant_camera_fov: float = 70.0
+
+var endless_camera_position: Vector3 = Vector3(0.0, 3.45, 5.25)
+var endless_camera_rotation_degrees: Vector3 = Vector3(-28.0, 0.0, 0.0)
+var endless_camera_fov: float = 62.0
+
 enum GameState {
 	SPLASH,
 	MENU,
@@ -173,9 +183,13 @@ func load_wallet_money() -> void:
 
 	wallet_money = int(save_file.get_value(SAVE_SECTION, "wallet_money", 0))
 	unlocked_stage = int(save_file.get_value(SAVE_SECTION, "unlocked_stage", 1))
+	endless_best_layers = int(save_file.get_value(SAVE_SECTION, "endless_best_layers", 0))
 
 	if wallet_money < 0:
 		wallet_money = 0
+
+	if endless_best_layers < 0:
+		endless_best_layers = 0
 
 	if unlocked_stage < 1:
 		unlocked_stage = 1
@@ -209,6 +223,7 @@ func save_wallet_money() -> void:
 
 	save_file.set_value(SAVE_SECTION, "wallet_money", wallet_money)
 	save_file.set_value(SAVE_SECTION, "unlocked_stage", unlocked_stage)
+	save_file.set_value(SAVE_SECTION, "endless_best_layers", endless_best_layers)
 
 	var save_error: int = save_file.save(SAVE_FILE_PATH)
 
@@ -435,6 +450,8 @@ func end_endless_run() -> void:
 	can_drop = false
 	flip_available = false
 	flip_used = false
+
+	save_wallet_money()
 
 	last_result = "Endless run over | Best " + str(endless_best_layers)
 
@@ -790,7 +807,37 @@ func set_static_body_collision_enabled(body: Node3D, enabled: bool) -> void:
 		if collision_shape != null:
 			collision_shape.disabled = not enabled
 
+func apply_camera_profile(
+	camera_position: Vector3,
+	camera_rotation_degrees: Vector3,
+	camera_fov: float
+) -> void:
+	if main_camera == null:
+		return
+
+	main_camera.position = camera_position
+	main_camera.rotation_degrees = camera_rotation_degrees
+	main_camera.fov = camera_fov
+
+
+func apply_restaurant_camera_profile() -> void:
+	apply_camera_profile(
+		restaurant_camera_position,
+		restaurant_camera_rotation_degrees,
+		restaurant_camera_fov
+	)
+
+
+func apply_endless_camera_profile() -> void:
+	apply_camera_profile(
+		endless_camera_position,
+		endless_camera_rotation_degrees,
+		endless_camera_fov
+	)
+
 func setup_restaurant_layout() -> void:
+	# apply_restaurant_camera_profile()
+	
 	active_stack_names = ["A", "B"]
 
 	if plate_a_body != null and is_instance_valid(plate_a_body):
@@ -825,6 +872,8 @@ func setup_restaurant_layout() -> void:
 		game_ui.set_endless_hud_mode(false)
 
 func setup_endless_layout() -> void:
+	# apply_endless_camera_profile()
+		
 	active_stack_names = ["A"]
 
 	if plate_a_body != null and is_instance_valid(plate_a_body):
